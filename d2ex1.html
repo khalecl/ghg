@@ -1,0 +1,1241 @@
+<div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Implement improvements:</label>
+                                <input type="text" name="improvements" class="text-input" placeholder="e.g., Component replacement, process optimization">
+                            </div>
+
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Prepare GCOM documentation:</label>
+                                <input type="text" name="gcom_documentation" class="text-input" placeholder="e.g., Project Design Document, monitoring plan">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px;">
+                        <div class="input-group">
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #2d5a27;">Expected ROI timeline (months):</label>
+                                <input type="number" name="roi_timeline" class="text-input" placeholder="e.g., 18" min="1" max="120">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #2d5a27;">Global Methane Pledge alignment score (1-10):</label>
+                                <input type="number" name="pledge_score" class="text-input" placeholder="e.g., 8" min="1" max="10">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">Complete Assessment & Get Expert Analysis</button>
+            </form>
+        </div>
+
+        <div class="feedback-container" id="feedbackContainer">
+            <div class="feedback-title">Your Methane Management Strategy Results</div>
+            <div id="feedbackContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Timer functionality
+        let timeLeft = 15 * 60; // 15 minutes in seconds
+        const timerElement = document.getElementById('timer');
+        
+        function updateTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerElement.textContent = `Time: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (timeLeft <= 0) {
+                timerElement.textContent = "Time's up!";
+                timerElement.style.background = '#dc3545';
+                return;
+            }
+            
+            if (timeLeft <= 60) {
+                timerElement.style.background = '#dc3545';
+            } else if (timeLeft <= 300) {
+                timerElement.style.background = '#ffc107';
+                timerElement.style.color = '#000';
+            }
+            
+            timeLeft--;
+        }
+        
+        setInterval(updateTimer, 1000);
+
+        // Real-time GCOM calculator
+        function updateGCOMCalculator() {
+            const methaneInput = document.querySelector('input[name="methane_emissions"]');
+            const targetInput = document.querySelector('input[name="reduction_target"]');
+            
+            if (!methaneInput || !targetInput) return; // Safety check
+            
+            const methaneEmissions = parseFloat(methaneInput.value) || 0;
+            const reductionTarget = parseFloat(targetInput.value) || 0;
+            
+            const co2Equivalent = Math.round(methaneEmissions * 28);
+            const reductionPotential = Math.round(co2Equivalent * (reductionTarget / 100));
+            const creditValue = Math.round(reductionPotential * 25);
+            
+            const co2Element = document.getElementById('co2_equivalent');
+            const reductionElement = document.getElementById('reduction_potential');
+            const valueElement = document.getElementById('credit_value');
+            
+            if (co2Element) co2Element.textContent = co2Equivalent.toLocaleString() + ' tCO₂e';
+            if (reductionElement) reductionElement.textContent = reductionPotential.toLocaleString() + ' tCO₂e';
+            if (valueElement) valueElement.textContent = creditValue.toLocaleString() + ' SAR';
+        }
+
+        // Add event listeners for real-time calculation - with safety checks
+        function initializeCalculator() {
+            const methaneInput = document.querySelector('input[name="methane_emissions"]');
+            const targetInput = document.querySelector('input[name="reduction_target"]');
+            
+            if (methaneInput) {
+                methaneInput.addEventListener('input', updateGCOMCalculator);
+                methaneInput.addEventListener('change', updateGCOMCalculator);
+            }
+            if (targetInput) {
+                targetInput.addEventListener('input', updateGCOMCalculator);
+                targetInput.addEventListener('change', updateGCOMCalculator);
+            }
+        }
+
+        // Rating option selection with safety checks
+        function initializeRatingOptions() {
+            document.querySelectorAll('.rating-option').forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const radioInput = this.querySelector('input[type="radio"]');
+                    if (radioInput) {
+                        const name = radioInput.name;
+                        // Remove selected class from all options with same name
+                        document.querySelectorAll(`input[name="${name}"]`).forEach(input => {
+                            if (input.parentElement) {
+                                input.parentElement.classList.remove('selected');
+                            }
+                        });
+                        // Add selected class and check the radio
+                        this.classList.add('selected');
+                        radioInput.checked = true;
+                    }
+                });
+            });
+        }
+
+        // Detection method selection with safety checks
+        function initializeDetectionMethods() {
+            document.querySelectorAll('.detection-method').forEach(method => {
+                method.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const radioInput = this.querySelector('input[type="radio"]');
+                    if (radioInput) {
+                        // Remove selected class from all detection methods
+                        document.querySelectorAll('.detection-method').forEach(m => m.classList.remove('selected'));
+                        // Add selected class and check the radio
+                        this.classList.add('selected');
+                        radioInput.checked = true;
+                    }
+                });
+            });
+        }
+
+        // Form submission and feedback - moved outside DOMContentLoaded for better compatibility
+        function initializeFormHandlers() {
+            const form = document.getElementById('methaneAssessmentForm');
+            const submitBtn = document.querySelector('.submit-btn');
+            
+            if (form) {
+                form.onsubmit = function(e) {
+                    e.preventDefault();
+                    console.log('Form submitted via onsubmit');
+                    generateFeedback();
+                    return false;
+                };
+            }
+            
+            if (submitBtn) {
+                submitBtn.onclick = function(e) {
+                    e.preventDefault();
+                    console.log('Submit button clicked via onclick');
+                    generateFeedback();
+                    return false;
+                };
+            }
+        }
+
+        function generateFeedback() {
+            console.log('generateFeedback called'); // Debug log
+            
+            try {
+                const formData = new FormData(document.getElementById('methaneAssessmentForm'));
+                console.log('FormData created'); // Debug log
+                
+                // Play success sound
+                playSuccessSound();
+                
+                // Create confetti effect
+                createConfetti();
+                
+                // Create sparkles
+                createSparkles();
+                
+                // Calculate assessment scores with fallbacks
+                const equipmentScores = [
+                    parseInt(formData.get('valve_inspection')) || 1,
+                    parseInt(formData.get('pump_monitoring')) || 1,
+                    parseInt(formData.get('compressor_maintenance')) || 1,
+                    parseInt(formData.get('pipeline_integrity')) || 1
+                ];
+                
+                const avgEquipmentScore = equipmentScores.reduce((a, b) => a + b, 0) / equipmentScores.length;
+                const equipmentPercentage = Math.round((avgEquipmentScore / 5) * 100);
+                
+                const detectionMethod = formData.get('detection_method') || 'visual';
+                let detectionScore = 0;
+                const detectionScores = { 'visual': 20, 'handheld': 40, 'optical': 70, 'continuous': 90, 'aerial': 85 };
+                detectionScore = detectionScores[detectionMethod] || 20;
+                
+                const methaneEmissions = parseFloat(formData.get('methane_emissions')) || 0;
+                const reductionTarget = parseFloat(formData.get('reduction_target')) || 0;
+                const gcomAlignment = methaneEmissions > 0 && reductionTarget > 0 ? 100 : (methaneEmissions > 0 || reductionTarget > 0 ? 50 : 25);
+                
+                const planningItems = [
+                    formData.get('ldar_program'),
+                    formData.get('training_plan'),
+                    formData.get('equipment_upgrade'),
+                    formData.get('gcom_documentation')
+                ].filter(item => item && item.trim()).length;
+                const planningPercentage = Math.round((planningItems / 4) * 100);
+                
+                const overallScore = Math.round((equipmentPercentage + detectionScore + gcomAlignment + planningPercentage) / 4);
+
+                console.log('Scores calculated:', { equipmentPercentage, detectionScore, gcomAlignment, planningPercentage, overallScore }); // Debug log
+
+                let feedback = '';
+                
+                // Add celebration message with overall score
+                let scoreClass = 'score-excellent';
+                let scoreEmoji = '🏆';
+                let scoreMessage = 'Outstanding Methane Management!';
+                
+                if (overallScore < 50) {
+                    scoreClass = 'score-needs-improvement';
+                    scoreEmoji = '🎯';
+                    scoreMessage = 'Strong Foundation for Growth!';
+                } else if (overallScore < 75) {
+                    scoreClass = 'score-good';
+                    scoreEmoji = '⭐';
+                    scoreMessage = 'Excellent Methane Strategy!';
+                }
+                
+                feedback += '<div style="text-align: center; margin-bottom: 30px; padding: 25px; background: linear-gradient(45deg, #fff3cd, #d1ecf1); border-radius: 15px; border: 3px solid #ffc107; box-shadow: 0 8px 25px rgba(0,0,0,0.15);">';
+                feedback += '<h3 style="color: #856404; margin-bottom: 15px; font-size: 1.8em;">🎉 Methane Assessment Complete! 🎉</h3>';
+                feedback += `<div style="background: white; padding: 20px; border-radius: 10px; margin: 15px 0; border: 2px solid #28a745;">`;
+                feedback += `<h2 style="color: #2d5a27; margin: 0; font-size: 2.5em;">${scoreEmoji} ${overallScore}%</h2>`;
+                feedback += `<p style="color: #2d5a27; font-size: 1.3em; font-weight: 600; margin: 5px 0;">${scoreMessage}</p>`;
+                feedback += `<p style="color: #495057; margin: 0;">Overall Methane Management Maturity Score</p>`;
+                feedback += '</div>';
+                feedback += '<p style="color: #0c5460; font-size: 1.1em;">You\'ve successfully assessed your methane management using Saudi GCOM methodology!</p>';
+                feedback += '</div>';
+
+                // Equipment Management Assessment
+                feedback += '<div class="feedback-section" style="animation: slideInLeft 0.6s ease-out 0.2s both;">';
+                feedback += '<h4>🔧 Equipment Management Assessment</h4>';
+                
+                feedback += `<div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #fff8e1, #f3e5f5); border-radius: 10px; border-left: 5px solid #ff9800;">`;
+                feedback += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">`;
+                feedback += `<span style="font-weight: 600; color: #f57c00;">Equipment Leak Management:</span>`;
+                feedback += `<span style="font-size: 1.8em; font-weight: 700; color: #f57c00;">${equipmentPercentage}%</span>`;
+                feedback += `</div>`;
+                feedback += `<div style="background: #e0e0e0; border-radius: 10px; height: 12px; overflow: hidden;">`;
+                feedback += `<div style="background: linear-gradient(90deg, #ff4444, #ffaa00, #00dd00); height: 100%; width: ${equipmentPercentage}%; transition: width 2s ease-out; border-radius: 10px;"></div>`;
+                feedback += `</div>`;
+                feedback += `<p style="margin: 8px 0 0 0; font-size: 0.9em; color: #666;">Average score: ${avgEquipmentScore.toFixed(1)}/5.0 across equipment categories</p>`;
+                feedback += `</div>`;
+
+                if (equipmentPercentage >= 80) {
+                    feedback += '<span class="score-indicator score-excellent">🌟 Advanced Equipment Management</span>';
+                    feedback += '<p><strong>Outstanding!</strong> Your equipment leak management program demonstrates best practices aligned with Saudi GCOM methodology. This systematic approach positions you for immediate GCOM project development.</p>';
+                    feedback += '<p><em>GCOM Advantage:</em> Advanced equipment management typically reduces methane emissions by 40-60%, generating significant carbon credits under Saudi DNA verification.</p>';
+                } else if (equipmentPercentage >= 50) {
+                    feedback += '<span class="score-indicator score-good">✅ Solid Equipment Foundation</span>';
+                    feedback += '<p><strong>Good progress!</strong> Your equipment management shows promise. Focus on upgrading to continuous monitoring and predictive maintenance for maximum GCOM credit potential.</p>';
+                    feedback += '<p><em>Improvement opportunity:</em> Upgrading to predictive maintenance can reduce unplanned emissions by 25-40% and qualify for additional GCOM credits.</p>';
+                } else {
+                    feedback += '<span class="score-indicator score-needs-improvement">⚠️ Equipment Management Enhancement Needed</span>';
+                    feedback += '<p><strong>Development priority:</strong> Basic equipment management detected. Saudi GCOM methodology requires systematic LDAR programs for methane project approval.</p>';
+                    feedback += '<p><em>Action required:</em> Implement basic LDAR program within 90 days. This foundational step is mandatory for Saudi methane credit generation.</p>';
+                }
+                feedback += '</div>';
+
+                // Detection Technology Assessment
+                feedback += '<div class="feedback-section" style="animation: slideInRight 0.6s ease-out 0.4s both;">';
+                feedback += '<h4>🔍 Detection Technology Assessment</h4>';
+                
+                feedback += `<div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #e3f2fd, #f3e5f5); border-radius: 10px; border-left: 5px solid #2196f3;">`;
+                feedback += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">`;
+                feedback += `<span style="font-weight: 600; color: #1976d2;">Detection Technology Level:</span>`;
+                feedback += `<span style="font-size: 1.8em; font-weight: 700; color: #1976d2;">${detectionScore}%</span>`;
+                feedback += `</div>`;
+                feedback += `<div style="background: #e0e0e0; border-radius: 10px; height: 12px; overflow: hidden;">`;
+                feedback += `<div style="background: linear-gradient(90deg, #ff4444, #ffaa00, #00dd00); height: 100%; width: ${detectionScore}%; transition: width 2s ease-out; border-radius: 10px;"></div>`;
+                feedback += `</div>`;
+                
+                let detectionMethodName = '';
+                switch(detectionMethod) {
+                    case 'visual': detectionMethodName = 'Visual Inspection Only'; break;
+                    case 'handheld': detectionMethodName = 'Handheld Gas Detectors'; break;
+                    case 'optical': detectionMethodName = 'Optical Gas Imaging (FLIR)'; break;
+                    case 'continuous': detectionMethodName = 'Continuous Monitoring Sensors'; break;
+                    case 'aerial': detectionMethodName = 'Aerial/Drone Surveys'; break;
+                    default: detectionMethodName = 'Not Selected'; break;
+                }
+                
+                feedback += `<p style="margin: 8px 0 0 0; font-size: 0.9em; color: #666;">Current method: ${detectionMethodName}</p>`;
+                feedback += `</div>`;
+
+                // Technology-specific feedback
+                if (detectionScore >= 80) {
+                    feedback += '<span class="score-indicator score-excellent">🌟 Advanced Detection Technology</span>';
+                    feedback += '<p><strong>Excellent!</strong> Your detection technology represents industry best practices and meets Saudi GCOM requirements for comprehensive methane monitoring.</p>';
+                } else if (detectionScore >= 60) {
+                    feedback += '<span class="score-indicator score-good">✅ Good Detection Capability</span>';
+                    feedback += '<p><strong>Good foundation!</strong> Your detection technology is solid but can be enhanced for maximum GCOM credit potential.</p>';
+                } else {
+                    feedback += '<span class="score-indicator score-needs-improvement">⚠️ Detection Technology Upgrade Needed</span>';
+                    feedback += '<p><strong>Enhancement required:</strong> Current detection capability is insufficient for comprehensive methane management and GCOM project requirements.</p>';
+                }
+                feedback += '</div>';
+
+                // GCOM Potential
+                if (methaneEmissions > 0 && reductionTarget > 0) {
+                    const co2Equivalent = Math.round(methaneEmissions * 28);
+                    const reductionPotential = Math.round(co2Equivalent * (reductionTarget / 100));
+                    const creditValue = Math.round(reductionPotential * 25);
+                    
+                    feedback += '<div class="feedback-section" style="animation: slideInUp 0.6s ease-out 0.6s both;">';
+                    feedback += '<h4>💰 GCOM Credit Potential</h4>';
+                    feedback += `<div style="background: linear-gradient(45deg, #28a745, #20c997); color: white; padding: 25px; border-radius: 15px; text-align: center; margin: 20px 0;">`;
+                    feedback += '<h4 style="margin: 0 0 15px 0; color: white;">🌟 Your Methane GCOM Potential 🌟</h4>';
+                    feedback += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 15px 0;">';
+                    feedback += `<div><h3 style="margin: 0; color: white;">${methaneEmissions}</h3><p style="margin: 5px 0 0 0; opacity: 0.9;">Tonnes CH₄/year</p></div>`;
+                    feedback += `<div><h3 style="margin: 0; color: white;">${co2Equivalent.toLocaleString()}</h3><p style="margin: 5px 0 0 0; opacity: 0.9;">tCO₂e Current Impact</p></div>`;
+                    feedback += `<div><h3 style="margin: 0; color: white;">${reductionPotential.toLocaleString()}</h3><p style="margin: 5px 0 0 0; opacity: 0.9;">GCOM Credits Potential</p></div>`;
+                    feedback += `<div><h3 style="margin: 0; color: white;">${creditValue.toLocaleString()} SAR</h3><p style="margin: 5px 0 0 0; opacity: 0.9;">Annual Revenue</p></div>`;
+                    feedback += '</div>';
+                    feedback += '<p style="margin: 0; opacity: 0.95;">Supporting Saudi Arabia\'s Global Methane Pledge commitment!</p>';
+                    feedback += '</div>';
+                    feedback += '</div>';
+                }
+
+                // Recommendations
+                feedback += '<div style="animation: fadeIn 0.8s ease-out 1.0s both; background: linear-gradient(135deg, #f8f9fa, #e9ecef); border: 2px solid #17a2b8; border-radius: 15px; padding: 25px; margin-top: 20px;">';
+                feedback += '<h4 style="color: #17a2b8; margin-bottom: 20px;">🎯 Your Methane Management Action Plan</h4>';
+                feedback += '<ul style="list-style: none; padding: 0;">';
+                
+                if (equipmentPercentage < 60) {
+                    feedback += '<li style="padding: 10px; margin: 8px 0; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px;">⚠️ <strong>Priority:</strong> Implement systematic LDAR program with trained personnel and proper procedures.</li>';
+                }
+                
+                if (detectionScore < 70) {
+                    feedback += '<li style="padding: 10px; margin: 8px 0; background: #cce5ff; border-left: 4px solid #007bff; border-radius: 5px;">🔧 <strong>Technology:</strong> Upgrade to FLIR optical gas imaging for comprehensive leak detection.</li>';
+                }
+                
+                if (methaneEmissions === 0) {
+                    feedback += '<li style="padding: 10px; margin: 8px 0; background: #f8d7da; border-left: 4px solid #dc3545; border-radius: 5px;">📊 <strong>Critical:</strong> Conduct baseline methane emissions measurement - required for GCOM projects.</li>';
+                }
+                
+                if (reductionTarget < 25) {
+                    feedback += '<li style="padding: 10px; margin: 8px 0; background: #d1ecf1; border-left: 4px solid #17a2b8; border-radius: 5px;">🎯 <strong>Target:</strong> Set 30% reduction target to align with Global Methane Pledge commitments.</li>';
+                }
+                
+                feedback += '<li style="padding: 10px; margin: 8px 0; background: #d4edda; border-left: 4px solid #28a745; border-radius: 5px;">📚 <strong>Next Step:</strong> Contact Saudi DNA for GCOM methodology guidance and project development support.</li>';
+                feedback += '</ul>';
+                feedback += '</div>';
+
+                console.log('Feedback generated, displaying...'); // Debug log
+
+                // Display feedback with dramatic effect
+                const feedbackContainer = document.getElementById('feedbackContainer');
+                const feedbackContent = document.getElementById('feedbackContent');
+                
+                feedbackContent.innerHTML = feedback;
+                feedbackContainer.style.display = 'block';
+                
+                setTimeout(() => {
+                    feedbackContainer.scrollIntoView({ behavior: 'smooth' });
+                }, 500);
+                
+                console.log('Feedback displayed successfully'); // Debug log
+                
+            } catch (error) {
+                console.error('Error in generateFeedback:', error);
+                // Fallback simple feedback
+                const feedbackContainer = document.getElementById('feedbackContainer');
+                const feedbackContent = document.getElementById('feedbackContent');
+                
+                feedbackContent.innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <h2 style="color: #2d5a27;">🎉 Assessment Complete! 🎉</h2>
+                        <p style="font-size: 1.2em; margin: 20px 0;">Thank you for completing the methane management assessment!</p>
+                        <p>Your responses have been recorded and feedback is being generated.</p>
+                    </div>
+                `;
+                feedbackContainer.style.display = 'block';
+                feedbackContainer.scrollIntoView({ behavior: 'smooth' });
+            }
+        } for basic LDAR but not optimal for GCOM.</p>';
+                    feedback += '<p><strong>Correction needed:</strong> Consider FLIR cameras for comprehensive leak detection. Handheld detectors miss 30-50% of actual leaks.</p>';
+                    feedback += '<p><strong>Training point:</strong> Discuss detection efficiency rates - handheld detectors typically find 50-70% of leaks compared to 90%+ for FLIR cameras.</p>';
+                    break;
+                case 'optical':
+                    feedback += '<span class="score-indicator score-good">70% - Optical Gas Imaging</span>';
+                    feedback += '<p><strong>Why this score:</strong> FLIR cameras provide excellent visual leak detection and are accepted for GCOM projects. Missing points for lack of continuous monitoring capability.</p>';
+                    feedback += '<p><strong>Enhancement opportunity:</strong> Combine with continuous sensors for critical equipment to reach 90%+ score.</p>';
+                    feedback += '<p><strong>Training point:</strong> Emphasize that FLIR is the gold standard for LDAR programs but continuous monitoring adds significant value.</p>';
+                    break;
+                case 'continuous':
+                    feedback += '<span class="score-indicator score-excellent">90% - Continuous Monitoring</span>';
+                    feedback += '<p><strong>Why this score:</strong> Continuous monitoring represents best practice for methane management. Provides real-time data, immediate alerts, and comprehensive coverage ideal for GCOM projects.</p>';
+                    feedback += '<p><strong>Excellence factors:</strong> 24/7 monitoring, automatic data logging, immediate leak detection, and regulatory compliance advantages.</p>';
+                    feedback += '<p><strong>Training point:</strong> Highlight ROI calculation - continuous monitoring typically pays for itself within 18-24 months through emission reductions.</p>';
+                    break;
+                case 'aerial':
+                    feedback += '<span class="score-indicator score-good">85% - Aerial/Drone Surveys</span>';
+                    feedback += '<p><strong>Why this score:</strong> Aerial surveys provide excellent large-area coverage and can detect major leaks missed by ground-based methods. High technology score but needs ground-level verification.</p>';
+                    feedback += '<p><strong>Enhancement opportunity:</strong> Combine with ground-based continuous monitoring for complete coverage.</p>';
+                    feedback += '<p><strong>Training point:</strong> Explain aerial detection advantages for large facilities but emphasize need for integrated approach.</p>';
+                    break;
+                default:
+                    feedback += '<span class="score-indicator score-needs-improvement">0% - No Method Selected</span>';
+                    feedback += '<p><strong>Why this score:</strong> No detection method selected indicates lack of systematic methane management program.</p>';
+                    feedback += '<p><strong>Training point:</strong> Emphasize importance of technology selection for effective methane management and GCOM project success.</p>';
+                    break;
+            }
+            feedback += '</div>';
+
+            feedback += '</div>';
+
+            // GCOM Alignment Assessment
+            feedback += '<div class="feedback-section" style="animation: slideInUp 0.6s ease-out 0.6s both;">';
+            feedback += '<h4>💰 GCOM Credit Potential Assessment</h4>';
+            
+            feedback += `<div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #e8f5e8, #fff8e1); border-radius: 10px; border-left: 5px solid #4caf50;">`;
+            feedback += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">`;
+            feedback += `<span style="font-weight: 600; color: #388e3c;">GCOM Project Readiness:</span>`;
+            feedback += `<span style="font-size: 1.8em; font-weight: 700; color: #388e3c;">${gcomAlignment}%</span>`;
+            feedback += `</div>`;
+            feedback += `<div style="background: #e0e0e0; border-radius: 10px; height: 12px; overflow: hidden;">`;
+            feedback += `<div style="background: linear-gradient(90deg, #ff4444, #ffaa00, #00dd00); height: 100%; width: ${gcomAlignment}%; transition: width 2s ease-out; border-radius: 10px;"></div>`;
+            feedback += `</div>`;
+            
+            if (methaneEmissions > 0 && reductionTarget > 0) {
+                const co2Equivalent = Math.round(methaneEmissions * 28);
+                const reductionPotential = Math.round(co2Equivalent * (reductionTarget / 100));
+                const creditValue = Math.round(reductionPotential * 25);
+                
+                feedback += `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 15px; text-align: center;">`;
+                feedback += `<div><strong>${methaneEmissions} tCH₄</strong><br><small>Annual emissions</small></div>`;
+                feedback += `<div><strong>${co2Equivalent.toLocaleString()} tCO₂e</strong><br><small>Current impact</small></div>`;
+                feedback += `<div><strong>${reductionPotential.toLocaleString()} tCO₂e</strong><br><small>Credit potential</small></div>`;
+                feedback += `<div><strong>${creditValue.toLocaleString()} SAR</strong><br><small>Annual value</small></div>`;
+                feedback += `</div>`;
+            }
+            feedback += `</div>`;
+
+            // Trainer assessment for GCOM alignment
+            feedback += '<div style="background: #f0f8ff; padding: 20px; border-radius: 10px; border-left: 4px solid #0066cc; margin: 20px 0;">';
+            feedback += '<h5 style="color: #0066cc; margin-bottom: 15px;">🎓 Trainer GCOM Assessment Guide:</h5>';
+            
+            if (methaneEmissions > 0 && reductionTarget >= 25) {
+                feedback += '<span class="score-indicator score-excellent">Excellent GCOM Readiness</span>';
+                feedback += '<p><strong>Why excellent:</strong> Clear quantification of emissions and ambitious reduction target (≥25%) aligns with Global Methane Pledge and Saudi GCOM requirements.</p>';
+                feedback += '<p><strong>Training point:</strong> Emphasize that quantified baselines and realistic targets are essential for GCOM project approval. This participant shows strong project development potential.</p>';
+                feedback += `<p><strong>Revenue potential:</strong> With ${reductionTarget}% reduction target, this could generate ${Math.round(methaneEmissions * 28 * (reductionTarget/100) * 25).toLocaleString()} SAR annually in GCOM credits.</p>`;
+            } else if (methaneEmissions > 0 && reductionTarget > 0) {
+                feedback += '<span class="score-indicator score-good">Good GCOM Foundation</span>';
+                feedback += '<p><strong>Why good:</strong> Emissions quantified and reduction target set, but target below optimal level for maximum GCOM benefits.</p>';
+                feedback += '<p><strong>Training point:</strong> Encourage more ambitious targets. Global Methane Pledge requires 30% reduction - this should be minimum for GCOM projects.</p>';
+                feedback += '<p><strong>Improvement suggestion:</strong> Increase target to 25-30% for better alignment with Saudi climate commitments.</p>';
+            } else if (methaneEmissions > 0) {
+                feedback += '<span class="score-indicator score-needs-improvement">Partial GCOM Preparation</span>';
+                feedback += '<p><strong>Why partial:</strong> Emissions quantified but no reduction target set. GCOM projects require specific, measurable targets.</p>';
+                feedback += '<p><strong>Training point:</strong> Explain that GCOM methodology requires baseline + target + monitoring plan. Missing targets indicate incomplete project development.</p>';
+            } else {
+                feedback += '<span class="score-indicator score-needs-improvement">GCOM Preparation Needed</span>';
+                feedback += '<p><strong>Why needs improvement:</strong> No emissions quantification or targets provided. Cannot develop GCOM project without baseline data.</p>';
+                feedback += '<p><strong>Training point:</strong> Emphasize fundamental requirement for emissions measurement. No GCOM project possible without quantified baseline.</p>';
+            }
+            feedback += '</div>';
+
+            // Global Methane Pledge Alignment
+            const pledgeAlignment = formData.get('methane_pledge_alignment');
+            if (pledgeAlignment) {
+                feedback += '<div style="margin-top: 20px; padding: 15px; background: #e8f5e8; border-radius: 8px; border-left: 4px solid #28a745;">';
+                feedback += '<h5 style="color: #28a745; margin-bottom: 10px;">🌍 Global Methane Pledge Alignment</h5>';
+                
+                switch(pledgeAlignment) {
+                    case 'exceeds':
+                        feedback += '<span class="score-indicator score-excellent">Exceeds Pledge Commitment</span>';
+                        feedback += '<p><strong>Outstanding alignment!</strong> Target >30% exceeds Saudi Arabia\'s Global Methane Pledge commitment, positioning for maximum GCOM credits and international recognition.</p>';
+                        break;
+                    case 'meets':
+                        feedback += '<span class="score-indicator score-excellent">Meets Pledge Commitment</span>';
+                        feedback += '<p><strong>Perfect alignment!</strong> 25-30% target directly supports Saudi Arabia\'s Global Methane Pledge commitment and qualifies for priority GCOM processing.</p>';
+                        break;
+                    case 'partial':
+                        feedback += '<span class="score-indicator score-good">Partial Pledge Alignment</span>';
+                        feedback += '<p><strong>Good foundation!</strong> 10-25% target contributes to pledge goals but consider increasing to 30% for full alignment and maximum credit potential.</p>';
+                        break;
+                    case 'below':
+                        feedback += '<span class="score-indicator score-needs-improvement">Below Pledge Commitment</span>';
+                        feedback += '<p><strong>Alignment needed:</strong> <10% target insufficient for pledge goals. Increase to minimum 25% to support Saudi national commitments.</p>';
+                        break;
+                    case 'none':
+                        feedback += '<span class="score-indicator score-needs-improvement">No Pledge Alignment</span>';
+                        feedback += '<p><strong>Target setting required:</strong> No specific target contradicts Saudi Arabia\'s Global Methane Pledge. Set minimum 30% reduction target.</p>';
+                        break;
+                }
+                feedback += '</div>';
+            }
+
+            feedback += '</div>';
+
+            // Implementation Planning Assessment
+            feedback += '<div class="feedback-section" style="animation: fadeIn 0.8s ease-out 0.8s both;">';
+            feedback += '<h4>📋 Implementation Planning Assessment</h4>';
+            
+            feedback += `<div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #fff3e0, #fce4ec); border-radius: 10px; border-left: 5px solid #ff9800;">`;
+            feedback += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">`;
+            feedback += `<span style="font-weight: 600; color: #f57c00;">Implementation Plan Completeness:</span>`;
+            feedback += `<span style="font-size: 1.8em; font-weight: 700; color: #f57c00;">${planningPercentage}%</span>`;
+            feedback += `</div>`;
+            feedback += `<div style="background: #e0e0e0; border-radius: 10px; height: 12px; overflow: hidden;">`;
+            feedback += `<div style="background: linear-gradient(90deg, #ff4444, #ffaa00, #00dd00); height: 100%; width: ${planningPercentage}%; transition: width 2s ease-out; border-radius: 10px;"></div>`;
+            feedback += `</div>`;
+            feedback += `<p style="margin: 8px 0 0 0; font-size: 0.9em; color: #666;">Completed ${planningItems} out of 4 key planning elements</p>`;
+            feedback += `</div>`;
+
+            // Trainer guidance for planning assessment
+            feedback += '<div style="background: #f0f8ff; padding: 20px; border-radius: 10px; border-left: 4px solid #0066cc;">';
+            feedback += '<h5 style="color: #0066cc; margin-bottom: 15px;">🎓 Trainer Planning Assessment Guide:</h5>';
+            
+            if (planningPercentage >= 75) {
+                feedback += '<span class="score-indicator score-excellent">Comprehensive Planning</span>';
+                feedback += '<p><strong>Why excellent:</strong> Most planning elements completed, showing systematic approach to methane management implementation.</p>';
+                feedback += '<p><strong>Training point:</strong> Highlight completeness as key success factor. Well-planned projects have 80% higher success rates in GCOM approval.</p>';
+            } else if (planningPercentage >= 50) {
+                feedback += '<span class="score-indicator score-good">Solid Planning Foundation</span>';
+                feedback += '<p><strong>Why good:</strong> Core planning elements addressed but gaps remain. Shows understanding but needs completion.</p>';
+                feedback += '<p><strong>Training point:</strong> Emphasize importance of comprehensive planning for project success and regulatory approval.</p>';
+            } else {
+                feedback += '<span class="score-indicator score-needs-improvement">Planning Development Needed</span>';
+                feedback += '<p><strong>Why needs improvement:</strong> Limited planning elements completed. Insufficient for effective project implementation.</p>';<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day 2 Exercise 1: Saudi Methane Management Strategy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2d5a27, #4a7c59);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .exercise-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: #fafafa;
+            border-radius: 10px;
+            border-left: 5px solid #2d5a27;
+        }
+
+        .section h3 {
+            color: #2d5a27;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            font-weight: 600;
+        }
+
+        .rating-item {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .rating-item:hover {
+            border-color: #2d5a27;
+            background: #f8f9fa;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+
+        .item-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .item-icon {
+            font-size: 2em;
+            margin-right: 15px;
+            width: 60px;
+            text-align: center;
+        }
+
+        .item-details h4 {
+            color: #2d5a27;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .item-details p {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .rating-scale {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .rating-option {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .rating-option input[type="radio"] {
+            margin-right: 8px;
+            transform: scale(1.2);
+        }
+
+        .rating-option:hover {
+            border-color: #2d5a27;
+            background: #f0f8f0;
+        }
+
+        .rating-option.selected {
+            border-color: #2d5a27;
+            background: #2d5a27;
+            color: white;
+        }
+
+        .text-input, .select-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            background: white;
+        }
+
+        .text-input:focus, .select-input:focus {
+            outline: none;
+            border-color: #2d5a27;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .saudi-context {
+            background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #1976d2;
+            margin-bottom: 25px;
+            font-size: 0.95em;
+        }
+
+        .saudi-context strong {
+            color: #1976d2;
+        }
+
+        .gwp-highlight {
+            background: linear-gradient(135deg, #fff3e0, #fce4ec);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ff9800;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+
+        .gwp-highlight strong {
+            color: #f57c00;
+        }
+
+        .detection-method {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .detection-method:hover {
+            border-color: #2d5a27;
+            background: #f8f9fa;
+        }
+
+        .detection-method input[type="radio"] {
+            margin-right: 15px;
+            transform: scale(1.3);
+        }
+
+        .detection-method.selected {
+            border-color: #2d5a27;
+            background: #e8f5e8;
+        }
+
+        .timeline-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .timeline-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .timeline-item:hover {
+            border-color: #2d5a27;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .timeline-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .month1-3 { background: #d4edda; color: #155724; }
+        .month4-6 { background: #fff3cd; color: #856404; }
+        .month7-12 { background: #cce5ff; color: #004085; }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #2d5a27, #4a7c59);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            margin: 30px auto;
+            box-shadow: 0 4px 15px rgba(45, 90, 39, 0.3);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(45, 90, 39, 0.4);
+        }
+
+        .feedback-container {
+            background: linear-gradient(135deg, #e8f5e8, #f0f8f0);
+            border: 3px solid #2d5a27;
+            border-radius: 20px;
+            padding: 40px;
+            margin-top: 30px;
+            display: none;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(45, 90, 39, 0.3);
+            animation: slideInUp 0.8s ease-out;
+        }
+
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .feedback-title {
+            color: #2d5a27;
+            font-size: 2.2em;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-align: center;
+            animation: pulse 2s ease-in-out infinite;
+            background: linear-gradient(45deg, #2d5a27, #4a7c59, #2d5a27);
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .feedback-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            border-left: 4px solid #2d5a27;
+        }
+
+        .score-indicator {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .score-excellent { background: #d4edda; color: #155724; }
+        .score-good { background: #fff3cd; color: #856404; }
+        .score-needs-improvement { background: #f8d7da; color: #721c24; }
+
+        .timer {
+            background: #2d5a27;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-weight: 600;
+            z-index: 1000;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #2d5a27;
+            animation: confetti-fall 3s linear infinite;
+        }
+
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, #ffd700, #ffed4e);
+            border-radius: 50%;
+            animation: sparkle 2s ease-in-out infinite;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+            50% { opacity: 1; transform: scale(1) rotate(180deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            .header h1 { font-size: 1.8em; }
+            .timer { position: relative; margin-bottom: 20px; text-align: center; }
+            .rating-item { grid-template-columns: 1fr; }
+            .input-group { grid-template-columns: 1fr; }
+            .timeline-section { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="timer" id="timer">Time: 15:00</div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>Exercise 1: Personal Methane Management Strategy</h1>
+            <p>Duration: 15 minutes | Saudi GCOM Methodology Assessment</p>
+        </div>
+
+        <div class="exercise-container">
+            <div class="saudi-context">
+                <strong>🇸🇦 Saudi Context:</strong> Saudi Arabia joined the Global Methane Pledge, committing to reduce methane emissions by 30% by 2030. The Kingdom's oil and gas sector offers significant methane reduction opportunities under GCOM methodology.
+            </div>
+
+            <div class="gwp-highlight">
+                <strong>🌡️ Saudi GCOM Standard:</strong> Methane has a Global Warming Potential (GWP) of 28 tCO₂e/tCH₄ under Saudi methodology. Every tonne of methane reduced = 28 tonnes of CO₂ equivalent credits.
+            </div>
+
+            <form id="methaneAssessmentForm">
+                <div class="section">
+                    <h3>Part A: Current State Assessment (5 minutes)</h3>
+                    <p style="margin-bottom: 25px; color: #666; font-style: italic;">Rate your facility's methane sources on a scale of 1-5 (1=Poor, 5=Excellent):</p>
+
+                    <h4 style="color: #2d5a27; margin-bottom: 20px;">🔧 Equipment Leaks Assessment</h4>
+
+                    <div class="rating-item">
+                        <div class="item-info">
+                            <div class="item-icon">🚰</div>
+                            <div class="item-details">
+                                <h4>Valve Inspection Frequency</h4>
+                                <p>Current practice: Monthly, quarterly, or annual inspections</p>
+                            </div>
+                        </div>
+                        <div class="rating-scale">
+                            <label class="rating-option">
+                                <input type="radio" name="valve_inspection" value="1">
+                                1 - Annual or less
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="valve_inspection" value="2">
+                                2 - Semi-annual
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="valve_inspection" value="3">
+                                3 - Quarterly
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="valve_inspection" value="4">
+                                4 - Monthly
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="valve_inspection" value="5">
+                                5 - Continuous monitoring
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="rating-item">
+                        <div class="item-info">
+                            <div class="item-icon">⚙️</div>
+                            <div class="item-details">
+                                <h4>Pump Seal Monitoring</h4>
+                                <p>Seal integrity and leak detection protocols</p>
+                            </div>
+                        </div>
+                        <div class="rating-scale">
+                            <label class="rating-option">
+                                <input type="radio" name="pump_monitoring" value="1">
+                                1 - Visual only
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="pump_monitoring" value="2">
+                                2 - Periodic checks
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="pump_monitoring" value="3">
+                                3 - Regular testing
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="pump_monitoring" value="4">
+                                4 - Automated alerts
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="pump_monitoring" value="5">
+                                5 - Real-time monitoring
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="rating-item">
+                        <div class="item-info">
+                            <div class="item-icon">🔄</div>
+                            <div class="item-details">
+                                <h4>Compressor Maintenance</h4>
+                                <p>Preventive maintenance and leak prevention</p>
+                            </div>
+                        </div>
+                        <div class="rating-scale">
+                            <label class="rating-option">
+                                <input type="radio" name="compressor_maintenance" value="1">
+                                1 - Reactive only
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="compressor_maintenance" value="2">
+                                2 - Basic schedule
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="compressor_maintenance" value="3">
+                                3 - Preventive program
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="compressor_maintenance" value="4">
+                                4 - Predictive maintenance
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="compressor_maintenance" value="5">
+                                5 - Condition-based monitoring
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="rating-item">
+                        <div class="item-info">
+                            <div class="item-icon">🚧</div>
+                            <div class="item-details">
+                                <h4>Pipeline Integrity</h4>
+                                <p>Pipeline monitoring and leak detection systems</p>
+                            </div>
+                        </div>
+                        <div class="rating-scale">
+                            <label class="rating-option">
+                                <input type="radio" name="pipeline_integrity" value="1">
+                                1 - No systematic program
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="pipeline_integrity" value="2">
+                                2 - Basic inspections
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="pipeline_integrity" value="3">
+                                3 - Regular integrity checks
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="pipeline_integrity" value="4">
+                                4 - Advanced monitoring
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="pipeline_integrity" value="5">
+                                5 - Continuous smart monitoring
+                            </label>
+                        </div>
+                    </div>
+
+                    <h4 style="color: #2d5a27; margin: 30px 0 20px 0;">🔍 Detection Capability Assessment</h4>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 15px; font-weight: 600; color: #2d5a27;">Current primary detection method:</label>
+                        
+                        <div class="detection-method">
+                            <input type="radio" name="detection_method" value="visual" id="visual">
+                            <label for="visual">
+                                <strong>Visual inspection only</strong><br>
+                                <span style="color: #666; font-size: 0.9em;">Manual visual checks without instruments</span>
+                            </label>
+                        </div>
+
+                        <div class="detection-method">
+                            <input type="radio" name="detection_method" value="handheld" id="handheld">
+                            <label for="handheld">
+                                <strong>Handheld gas detectors</strong><br>
+                                <span style="color: #666; font-size: 0.9em;">Portable LEL/VOC detectors for spot checking</span>
+                            </label>
+                        </div>
+
+                        <div class="detection-method">
+                            <input type="radio" name="detection_method" value="optical" id="optical">
+                            <label for="optical">
+                                <strong>Optical gas imaging (FLIR)</strong><br>
+                                <span style="color: #666; font-size: 0.9em;">Infrared cameras for visual gas leak detection</span>
+                            </label>
+                        </div>
+
+                        <div class="detection-method">
+                            <input type="radio" name="detection_method" value="continuous" id="continuous">
+                            <label for="continuous">
+                                <strong>Continuous monitoring sensors</strong><br>
+                                <span style="color: #666; font-size: 0.9em;">Fixed sensors with real-time data transmission</span>
+                            </label>
+                        </div>
+
+                        <div class="detection-method">
+                            <input type="radio" name="detection_method" value="aerial" id="aerial">
+                            <label for="aerial">
+                                <strong>Aerial/drone surveys</strong><br>
+                                <span style="color: #666; font-size: 0.9em;">Unmanned aerial vehicles with gas detection sensors</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>Part B: Saudi GCOM Alignment (5 minutes)</h3>
+                    
+                    <div class="input-group">
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #2d5a27;">Estimated annual methane emissions (tons CH₄):</label>
+                            <input type="number" name="methane_emissions" class="text-input" placeholder="e.g., 100" min="0" step="0.1">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #2d5a27;">Realistic reduction target (%):</label>
+                            <input type="number" name="reduction_target" class="text-input" placeholder="e.g., 25" min="0" max="100" step="1">
+                        </div>
+                    </div>
+
+                    <div style="margin: 25px 0;">
+                        <h4 style="color: #2d5a27; margin-bottom: 15px;">💰 GCOM Credit Potential Calculator</h4>
+                        <div style="background: white; padding: 20px; border-radius: 10px; border: 2px solid #28a745;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; text-align: center;">
+                                <div>
+                                    <div style="font-size: 0.9em; color: #666;">CO₂ Equivalent</div>
+                                    <div id="co2_equivalent" style="font-size: 1.5em; font-weight: 700; color: #28a745;">0 tCO₂e</div>
+                                    <div style="font-size: 0.8em; color: #999;">Current emissions × 28</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.9em; color: #666;">Reduction Potential</div>
+                                    <div id="reduction_potential" style="font-size: 1.5em; font-weight: 700; color: #2d5a27;">0 tCO₂e</div>
+                                    <div style="font-size: 0.8em; color: #999;">Potential GCOM credits</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.9em; color: #666;">Annual Credit Value</div>
+                                    <div id="credit_value" style="font-size: 1.5em; font-weight: 700; color: #1976d2;">0 SAR</div>
+                                    <div style="font-size: 0.8em; color: #999;">@ 25 SAR/tCO₂e</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="display: block; margin-bottom: 15px; font-weight: 600; color: #2d5a27;">Alignment with Global Methane Pledge (30% reduction by 2030):</label>
+                        <select name="methane_pledge_alignment" class="select-input">
+                            <option value="">Select alignment level...</option>
+                            <option value="exceeds">Exceeds - Target >30% reduction</option>
+                            <option value="meets">Meets - Target 25-30% reduction</option>
+                            <option value="partial">Partial - Target 10-25% reduction</option>
+                            <option value="below">Below - Target <10% reduction</option>
+                            <option value="none">No specific target set</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>Part C: Implementation Plan (5 minutes)</h3>
+                    <p style="margin-bottom: 25px; color: #666; font-style: italic;">Following Saudi best practices for methane management:</p>
+
+                    <div class="timeline-section">
+                        <div class="timeline-item">
+                            <div class="timeline-badge month1-3">Month 1-3: Baseline</div>
+                            <h4 style="color: #2d5a27; margin-bottom: 15px;">Baseline Establishment</h4>
+                            
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Implement LDAR program:</label>
+                                <select name="ldar_program" class="select-input">
+                                    <option value="">Select priority...</option>
+                                    <option value="immediate">Immediate priority - Start within 30 days</option>
+                                    <option value="planned">Planned - Start within 90 days</option>
+                                    <option value="future">Future consideration</option>
+                                    <option value="existing">Already implemented</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Train inspection team:</label>
+                                <input type="text" name="training_plan" class="text-input" placeholder="e.g., Certified LDAR technician training">
+                            </div>
+
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Document current state:</label>
+                                <input type="text" name="documentation_plan" class="text-input" placeholder="e.g., Equipment inventory, baseline measurements">
+                            </div>
+                        </div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-badge month4-6">Month 4-6: Technology</div>
+                            <h4 style="color: #2d5a27; margin-bottom: 15px;">Technology Upgrade</h4>
+                            
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Install detection equipment:</label>
+                                <select name="equipment_upgrade" class="select-input">
+                                    <option value="">Select equipment...</option>
+                                    <option value="flir">FLIR optical gas imaging cameras</option>
+                                    <option value="continuous">Continuous monitoring sensors</option>
+                                    <option value="handheld">Advanced handheld detectors</option>
+                                    <option value="comprehensive">Comprehensive system (multiple technologies)</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Enhance maintenance procedures:</label>
+                                <input type="text" name="maintenance_enhancement" class="text-input" placeholder="e.g., Predictive maintenance, seal upgrade program">
+                            </div>
+
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Begin data collection:</label>
+                                <input type="text" name="data_collection" class="text-input" placeholder="e.g., Digital leak tracking system, emissions database">
+                            </div>
+                        </div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-badge month7-12">Month 7-12: Optimization</div>
+                            <h4 style="color: #2d5a27; margin-bottom: 15px;">Optimization & GCOM</h4>
+                            
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Analyze patterns:</label>
+                                <input type="text" name="pattern_analysis" class="text-input" placeholder="e.g., Leak frequency analysis, equipment failure patterns">
+                            </div>
+
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Implement improvements:</label>
+                                <input type="text" name="improvements" class="text-input" placeholder="e.g., Component replacement
