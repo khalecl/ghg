@@ -114,6 +114,38 @@
     combo() {}, tick() {}, start() {}, rankUp() {}, fanfare() {}
   };
 
+  // ---------------- optional background music (original chiptune loop, off by default) ----------------
+  const MELODY = [
+    [523,.5],[659,.5],[784,.5],[659,.5],[698,1],[0,.5],[587,.5],
+    [523,.5],[587,.5],[659,.5],[523,.5],[440,1],[0,1],
+    [392,.5],[523,.5],[659,.5],[784,.5],[880,.75],[784,.25],[698,.5],[659,.5],
+    [587,.5],[659,.5],[698,.5],[587,.5],[523,1.5],[0,.5],
+    [659,.5],[698,.5],[784,1],[880,.5],[784,.5],[659,1],
+    [587,.5],[523,.5],[587,.5],[659,.5],[587,1],[0,1],
+    [523,.5],[659,.5],[784,.5],[1047,.5],[988,.5],[784,.5],[659,.5],[587,.5],
+    [523,1.5],[0,1.5]
+  ];
+  const BASS = [[131,2],[175,2],[147,2],[110,2],[131,2],[175,2],[196,2],[131,2],[165,2],[196,2],[147,2],[196,2],[131,2],[196,2],[131,3]];
+  const DRUM = 0.5; // hi-hat every half beat
+  const BEAT = 0.26;
+  let musicOn = false, musicTimer = null;
+  function playLoop() {
+    if (!musicOn) return;
+    let tm = 0;
+    MELODY.forEach(([f, b]) => { if (f) tone(f, tm, BEAT * b * 0.9, "square", 0.035); tm += BEAT * b; });
+    let bt = 0;
+    BASS.forEach(([f, b]) => { tone(f, bt, BEAT * b * 0.9, "triangle", 0.07); bt += BEAT * b; });
+    for (let h = 0; h < Math.max(tm, bt); h += BEAT * DRUM) tone(7000 + Math.random() * 1500, h, 0.03, "square", 0.012);
+    musicTimer = setTimeout(playLoop, Math.max(tm, bt) * 1000);
+  }
+  function setMusic(on) {
+    musicOn = on;
+    clearTimeout(musicTimer);
+    if (on) playLoop();
+    $("musicBtn").textContent = on ? "🎵 ON" : "🎵 OFF";
+    $("musicBtn").classList.toggle("on", on);
+  }
+
   // ---------------- pixel engineer ----------------
   function pixelEngineer(scale) {
     const P = window.PIXEL_ENGINEER, px = P.size * (scale || 1), shadows = [];
@@ -519,6 +551,7 @@
   }
 
   // ---------------- controls ----------------
+  $("musicBtn").onclick = () => setMusic(!musicOn);
   $("langBtn").onclick = () => { lang = lang === "ar" ? "en" : "ar"; save(KEY.lang, lang); SFX.tap(); applyLang(); };
   $("logoutBtn").onclick = () => {
     clearInterval(timer); timer = null;
@@ -534,6 +567,7 @@
   });
 
   // ---------------- boot ----------------
+  setTimeout(() => setMusic(false), 0);
   if (me()) { screen = "home"; pullProgress().then(() => { if (screen === "home") render(); renderBoard(); }); }
   applyLang();
   setTimeout(initDb, 300);

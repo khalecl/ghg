@@ -466,5 +466,44 @@ form select:invalid { color: #8a7aa8; }
 .why-box .alt { display: inline-block; margin: 0 .4rem; padding: 0 .5rem; border-radius: 999px; background: #ffd23e; color: #6b4a00; font-size: .75rem; font-weight: 700; text-decoration: none; }
 
 /* 16-bit side-scroller along the bottom */
-#scene { position: fixed; left: 0; bottom: 0; z-index: 5; pointer-events: none; image-rendering: pixelated; }
-body { padding-bottom: 175px !important; }
+#scene { position: fixed; inset: 0; z-index: 0; image-rendering: pixelated; cursor: pointer; touch-action: manipulation; }
+body { padding-bottom: calc(150px + env(safe-area-inset-bottom)) !important; }
+
+/* the 16-bit world sits behind; only cards and buttons are above it */
+main { z-index: 3; pointer-events: none; }
+main > * { pointer-events: auto; }
+.toolbar { z-index: 10; }
+.music-btn.on { background: linear-gradient(180deg, #7fe08a, #43d14f); border-color: #2a9d3a; color: #0d5c1a; box-shadow: 0 3px 0 #2a9d3a; }
+
+/* ---------- mobile ---------- */
+form input, form select { font-size: 16px; min-height: 46px; }  /* 16px stops iOS zooming in */
+.answer-btn { min-height: 52px; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.big-btn { min-height: 48px; touch-action: manipulation; }
+@media (max-width: 600px) {
+  body { padding: calc(58px + env(safe-area-inset-top)) 10px calc(130px + env(safe-area-inset-bottom)) !important; }
+  .toolbar { top: calc(8px + env(safe-area-inset-top)); }
+  .toolbar .music-btn { font-size: .78rem; padding: .35rem .65rem; }
+  main { gap: 14px; }
+  .card { padding: 1rem .9rem; border-width: 4px; border-radius: 1.4rem; box-shadow: 0 8px 0 rgba(0,0,0,.15); }
+  .hud { font-size: .82rem; gap: 4px; }
+  .question { font-size: 1.02rem; min-height: 0; margin-bottom: .8rem; }
+  .answers { gap: .55rem; }
+  .answer-btn { font-size: .95rem; padding: .7rem .8rem; }
+  .why-box { font-size: .9rem; padding: .65rem .8rem; }
+  .big-btn { width: 100%; margin-top: .8rem; padding: .8rem 1rem; }
+  .actions .big-btn { width: auto; flex: 1 1 140px; }
+  .days { gap: .4rem; }
+  .day-btn .num { font-size: 1rem; }
+  .board { padding: .9rem .8rem; }
+  .board-item { padding: .45rem .6rem; grid-template-columns: 1.8rem 1fr auto; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .result-score { font-size: 2rem; }
+  .pop { font-size: 1.1rem; }
+  html[lang="ar"] .pop { font-size: 1.9rem; }
+}
+@media (max-width: 360px) {
+  .answer-btn { font-size: .88rem; }
+  .toolbar .music-btn { font-size: .7rem; padding: .3rem .5rem; }
+}
+@media (max-width: 600px) { .row2 { grid-template-columns: 1fr 1fr !important; } .mario-buddy { transform: scale(.8); margin: -10px 0 -6px; } }
+@media (max-width: 340px) { .row2 { grid-template-columns: 1fr !important; } }
