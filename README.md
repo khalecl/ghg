@@ -5,16 +5,13 @@ A bilingual (Arabic / English) quiz for the 3-day course **Green Buildings: Rene
 ## What trainees get
 
 - **Registration:** name, email, mobile, organization, discipline.
-- **Resume:** progress is saved in the browser by email. Entering the same email on the same device continues from the next question.
-- **Days:** Day 1 is the default (highlighted). Trainees can pick Day 2 or Day 3 at any time.
-- **Arabic / English:** one button switches the whole app, including the questions. After each answer, the reason can also be read in the other language.
-- **Scoring:**
-  - 30 seconds per question.
-  - Base points × level weight (easy ×1, medium ×1.5, smart ×2).
-  - Speed bonus up to +100, based on time left.
-  - **Combo:** each correct answer within 12 seconds raises the multiplier by 0.25 (up to ×3). A wrong, slow or timed-out answer breaks it.
-- **Feedback:** correct answer and reason after every question; review of mistakes at the end; badge and stats.
-- Keyboard: 1–4 or A–D to answer, Enter for next.
+- **Resume:** progress is saved on the device and in Firebase. The same email continues from the next question, even on another device.
+- **Days:** Day 1 is selected by default; Day 2 and Day 3 are one tap away.
+- **Arabic / English:** one button switches everything, including questions. The reason after each answer can be read in the other language.
+- **Scoring:** 30 s per question; base points × level weight (easy ×1, medium ×1.5, smart ×2) + speed bonus. Correct answers within 12 s build a combo (×0.25 each, up to ×3). Wrong, slow or timed-out answers break it.
+- **Live leaderboard:** always visible under the question, one tab per day, top 10 with medals, the trainee's own row highlighted, and "your rank #N of M".
+- **Fun bits:** coins, combo pop-ups, confetti, short sound effects (mute button at the top).
+- Keyboard: 1–4 or A–D to answer.
 
 All numbers are in `config.js`.
 
@@ -75,9 +72,25 @@ This checks every question (missing fields, bad level or answer letter, duplicat
 
 To add a Day 4, add `questions/day4.ar.md` and a title for day 4 in `DAYS` inside `tools/build_questions.py`.
 
-## Collecting results (optional)
+## Leaderboard and database
 
-By default nothing leaves the trainee's device. To collect finished results in Firebase Firestore, fill `firebase.apiKey` and `firebase.projectId` in `config.js`. Each finished day is posted to the `gb_quiz_results` collection with name, email, phone, organization, discipline, day, score, correct count and best combo. Your Firestore rules must allow create on that collection.
+The quiz uses the same Firebase Realtime Database as the Env activities (`test-7f3ce`), under its own folder `gbquiz/`:
+
+| Path | Content |
+|---|---|
+| `gbquiz/day{N}/board/{id}` | Leaderboard row: name, organization, discipline, score, answered, correct, best combo, finished |
+| `gbquiz/progress/{id}/day{N}` | Where the trainee stopped (for resume on another device) |
+| `gbquiz/trainees/{id}` | Name, organization, discipline, last seen |
+
+`{id}` is a code made from the email, so emails do not appear in the database. Email and mobile stay on the trainee's device unless `sendContactDetails` is set to `true` in `config.js`.
+
+The database rules must allow read and write on `gbquiz`. If they don't, the leaderboard shows "Offline (check database rules)". Example rule to add next to the existing ones:
+
+```json
+"gbquiz": { ".read": true, ".write": true }
+```
+
+To clear the board between groups, delete the `gbquiz` node in the Firebase console.
 
 ## Files
 

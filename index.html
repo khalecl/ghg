@@ -1,105 +1,44 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Green Buildings Challenge | تحدي المباني الخضراء</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تحدي المباني الخضراء | Green Buildings Challenge</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Baloo+Bhaijaan+2:wght@500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header class="topbar">
-  <div class="brand"><span class="leaf"></span><span data-i18n="appTitle"></span></div>
-  <div class="top-actions">
-    <span id="who" class="who"></span>
-    <button id="langBtn" class="ghost" type="button"></button>
-    <button id="logoutBtn" class="ghost hidden" type="button" data-i18n="switchUser"></button>
-  </div>
-</header>
+<!-- decoration -->
+<div class="sun"></div>
+<div class="cloud" style="top:8%;animation-duration:60s">☁️</div>
+<div class="cloud" style="top:22%;animation-duration:85s;animation-delay:-30s">☁️</div>
+<div class="cloud" style="top:14%;animation-duration:110s;animation-delay:-70s;font-size:2.2rem">☁️</div>
+<div class="leaf-float" style="right:6%;top:40%">🌿</div>
+<div class="leaf-float" style="left:5%;top:60%;animation-delay:-1.2s">🍃</div>
+<div class="ground"><span class="tree" style="left:6%">🌳</span><span class="tree" style="left:30%">🏡</span><span class="tree" style="left:58%">🌲</span><span class="tree" style="left:82%">☀️</span></div>
 
-<main id="app">
-  <!-- Screen: registration -->
-  <section id="screen-login" class="screen card">
-    <h1 data-i18n="welcome"></h1>
-    <p class="muted" data-i18n="welcomeSub"></p>
-    <form id="loginForm" autocomplete="on">
-      <label><span data-i18n="fName"></span><input name="name" required maxlength="80"></label>
-      <label><span data-i18n="fEmail"></span><input name="email" type="email" required maxlength="120"></label>
-      <label><span data-i18n="fPhone"></span><input name="phone" type="tel" maxlength="30"></label>
-      <label><span data-i18n="fOrg"></span><input name="org" maxlength="120"></label>
-      <label><span data-i18n="fSpec"></span>
-        <select name="spec">
-          <option value="architecture" data-i18n="specArch"></option>
-          <option value="mechanical" data-i18n="specMech"></option>
-          <option value="electrical" data-i18n="specElec"></option>
-          <option value="civil" data-i18n="specCivil"></option>
-          <option value="environmental" data-i18n="specEnv"></option>
-          <option value="other" data-i18n="specOther"></option>
-        </select>
-      </label>
-      <p class="muted small" data-i18n="resumeHint"></p>
-      <button class="primary" type="submit" data-i18n="start"></button>
-    </form>
-  </section>
+<div class="toolbar">
+  <button id="langBtn" class="pill" type="button">English</button>
+  <button id="soundBtn" class="pill" type="button">🔊</button>
+  <button id="logoutBtn" class="pill hidden" type="button"></button>
+</div>
 
-  <!-- Screen: day picker -->
-  <section id="screen-days" class="screen hidden">
-    <h1 data-i18n="chooseDay"></h1>
-    <div id="dayCards" class="day-grid"></div>
-    <div class="rules card">
-      <h3 data-i18n="howTitle"></h3>
-      <ul id="rulesList"></ul>
-    </div>
-  </section>
+<main>
+  <div class="card" id="card"></div>
 
-  <!-- Screen: question -->
-  <section id="screen-quiz" class="screen hidden">
-    <div class="hud">
-      <div class="hud-item"><span class="muted" data-i18n="score"></span><strong id="hudScore">0</strong></div>
-      <div class="hud-item"><span class="muted" data-i18n="combo"></span><strong id="hudCombo">x1</strong></div>
-      <div class="hud-item"><span class="muted" data-i18n="question"></span><strong id="hudCount"></strong></div>
-      <div class="hud-item"><span class="muted" data-i18n="level"></span><strong id="hudLevel"></strong></div>
+  <section class="board">
+    <div class="board-head">
+      <div class="board-title">🏆 <span id="boardTitle"></span></div>
+      <div class="sync"><span class="dot" id="syncDot"></span><span id="syncLabel"></span></div>
     </div>
-    <div class="progress"><div id="progressBar"></div></div>
-    <div class="card qcard">
-      <div class="timer-wrap"><div id="timerBar" class="timer"></div><span id="timerText"></span></div>
-      <h2 id="qText"></h2>
-      <div id="options" class="options"></div>
-      <div id="feedback" class="feedback hidden">
-        <div id="fbTitle" class="fb-title"></div>
-        <div id="fbPoints" class="fb-points"></div>
-        <p id="fbReason"></p>
-        <div class="fb-actions">
-          <button id="otherLangBtn" class="ghost" type="button" data-i18n="seeOtherLang"></button>
-          <button id="nextBtn" class="primary" type="button" data-i18n="next"></button>
-        </div>
-      </div>
-    </div>
-    <div class="quiz-footer">
-      <button id="backDaysBtn" class="ghost" type="button" data-i18n="saveExit"></button>
-    </div>
-    <div id="comboPop" class="combo-pop hidden"></div>
-  </section>
-
-  <!-- Screen: results -->
-  <section id="screen-result" class="screen hidden">
-    <div class="card center">
-      <h1 data-i18n="finished"></h1>
-      <div id="finalScore" class="big-score"></div>
-      <div id="finalBadge" class="badge"></div>
-      <div id="finalStats" class="stats"></div>
-      <div class="fb-actions center-actions">
-        <button id="reviewBtn" class="ghost" type="button" data-i18n="reviewWrong"></button>
-        <button id="restartBtn" class="ghost" type="button" data-i18n="restartDay"></button>
-        <button id="toDaysBtn" class="primary" type="button" data-i18n="otherDays"></button>
-      </div>
-    </div>
-    <div id="reviewList" class="hidden"></div>
+    <div class="day-tabs" id="boardTabs"></div>
+    <ol class="board-list" id="boardList"></ol>
+    <div class="my-rank" id="myRank"></div>
   </section>
 </main>
-
-<div id="confetti"></div>
 
 <script src="config.js"></script>
 <script src="data/questions.js"></script>

@@ -1,516 +1,521 @@
-/* Green Buildings Challenge — bilingual quiz (Arabic / English)
-   Progress is saved per trainee (by email) in the browser, so a trainee can
-   leave and continue later from the same question on the same device. */
+/* Green Buildings Challenge — bilingual quiz with live leaderboard.
+   Progress is saved on the device and in Firebase, so a trainee can continue
+   from where they stopped, even on another device (same email). */
 (function () {
   "use strict";
 
   const CFG = window.QUIZ_CONFIG;
   const DATA = window.QUIZ_DATA;
   const LETTERS = ["A", "B", "C", "D"];
-  const KEY_USERS = "gbquiz:v1:users";
-  const KEY_CURRENT = "gbquiz:v1:current";
-  const KEY_LANG = "gbquiz:v1:lang";
+  const AR_KEYS = ["أ", "ب", "ج", "د"];
+  const KEY = { users: "gbq2:users", current: "gbq2:current", lang: "gbq2:lang", sound: "gbq2:sound" };
 
-  // ---------- UI text ----------
+  // ---------------- text ----------------
   const T = {
     ar: {
-      appTitle: "تحدي المباني الخضراء",
-      welcome: "أهلًا بك في تحدي المباني الخضراء",
-      welcomeSub: "أدخل بياناتك لتبدأ. إذا سبق أن بدأت، أدخل البريد نفسه لتكمل من حيث توقفت.",
-      fName: "الاسم الكامل", fEmail: "البريد الإلكتروني", fPhone: "رقم الجوال (اختياري)",
-      fOrg: "جهة العمل (اختياري)", fSpec: "التخصص",
-      specArch: "معماري", specMech: "ميكانيكي", specElec: "كهربائي", specCivil: "مدني / إنشائي",
-      specEnv: "بيئي", specOther: "أخرى",
-      resumeHint: "يُحفظ تقدمك على هذا الجهاز. استخدم البريد نفسه للمتابعة.",
-      start: "ابدأ", chooseDay: "اختر اليوم", switchUser: "تبديل المتدرب",
-      howTitle: "كيف تُحسب النقاط؟",
-      rules: [
-        "لكل سؤال {s} ثانية. أربعة خيارات وإجابة واحدة صحيحة.",
-        "الأسئلة تتدرج: سهل ثم متوسط ثم ذكي. السؤال المتوسط ×1.5 والذكي ×2.",
-        "كلما أجبت أسرع حصلت على نقاط سرعة إضافية.",
-        "الإجابة الصحيحة خلال {c} ثانية تبني سلسلة (كومبو) ترفع مضاعف النقاط حتى ×{m}.",
-        "الإجابة الخاطئة أو البطيئة تكسر السلسلة.",
-        "بعد كل سؤال يظهر السبب، فاقرأه قبل الانتقال."
-      ],
-      score: "النقاط", combo: "المضاعف", question: "السؤال", level: "المستوى",
-      easy: "سهل", medium: "متوسط", hard: "ذكي",
-      correct: "إجابة صحيحة", wrong: "إجابة خاطئة", timeout: "انتهى الوقت",
-      correctWas: "الإجابة الصحيحة: ", points: "نقطة", speed: "سرعة", mult: "مضاعف",
-      next: "التالي", finishBtn: "عرض النتيجة", seeOtherLang: "English", saveExit: "حفظ والخروج إلى الأيام",
-      finished: "أحسنت! أنهيت اليوم", reviewWrong: "مراجعة الأخطاء", restartDay: "إعادة اليوم من البداية",
-      otherDays: "الأيام الأخرى", day: "اليوم", questions: "سؤال", notStarted: "لم يبدأ",
-      inProgress: "متابعة من السؤال {n}", done: "مكتمل — {p} نقطة", defaultTag: "الافتراضي",
-      statCorrect: "صحيحة", statAccuracy: "الدقة", statBestCombo: "أطول سلسلة", statAvgTime: "متوسط الزمن",
-      sec: "ث", confirmRestart: "سيُحذف تقدمك في هذا اليوم. هل تريد البدء من جديد؟",
-      yourAnswer: "إجابتك: ", noAnswer: "لم تُجب", noWrong: "لا توجد أخطاء. ممتاز!",
-      badges: ["مبتدئ أخضر", "مهندس واعٍ", "خبير استدامة", "بطل المباني الخضراء"],
-      comboWord: "كومبو"
+      title: "تحدي المباني الخضراء", sub: "أجب بسرعة وبدقة، واجمع العملات، وتصدّر القائمة!",
+      name: "الاسم الكامل", email: "البريد الإلكتروني", phone: "الجوال (اختياري)", org: "جهة العمل (اختياري)",
+      spec: "التخصص", specs: { architecture: "معماري", mechanical: "ميكانيكي", electrical: "كهربائي", civil: "مدني / إنشائي", environmental: "بيئي", other: "أخرى" },
+      go: "هيا بنا!", hint: "استخدم البريد نفسه لتكمل من حيث توقفت.",
+      hello: "أهلًا", pickDay: "اختر اليوم", day: "اليوم", start: "ابدأ", resume: "أكمل من السؤال", replay: "عرض النتيجة",
+      notStarted: "لم يبدأ", done: "مكتمل", rules: "30 ثانية لكل سؤال • الأسرع يربح أكثر • 3 إجابات سريعة صحيحة = كومبو",
+      q: "سؤال", easy: "سهل", medium: "متوسط", hard: "ذكي",
+      right: ["ممتاز!", "إجابة صحيحة!", "رائع!", "أحسنت!"], wrong: "إجابة خاطئة", timeout: "انتهى الوقت!",
+      correctIs: "الصحيح: ", next: "التالي ←", finish: "النتيجة 🏁", seeAlt: "اقرأ السبب بالإنجليزية",
+      combo: "كومبو", home: "الأيام", resultTitle: "انتهى اليوم!", correct: "صحيحة", accuracy: "الدقة",
+      bestCombo: "أطول كومبو", avg: "متوسط الزمن", sec: "ث", review: "مراجعة أخطائي", again: "إعادة اليوم",
+      confirmAgain: "سيُحذف تقدمك في هذا اليوم ونقاطه. متأكد؟", noMistakes: "لا أخطاء، ممتاز!", you: "أنت",
+      yours: "إجابتك: ", none: "لم تُجب",
+      board: "قائمة المتصدرين", live: "مباشر", offline: "غير متصل", connecting: "جارٍ الاتصال…", denied: "غير متصل (تحقق من صلاحيات قاعدة البيانات)",
+      empty: "لا يوجد متسابقون بعد. كن الأول!", myRank: "ترتيبك {r} من {n}", answered: "سؤال", pts: "نقطة",
+      badges: ["🌱 مبتدئ أخضر", "🌿 مهندس واعٍ", "🌳 خبير استدامة", "🏆 بطل المباني الخضراء"],
+      logout: "تبديل المتدرب", langBtn: "English"
     },
     en: {
-      appTitle: "Green Buildings Challenge",
-      welcome: "Welcome to the Green Buildings Challenge",
-      welcomeSub: "Enter your details to start. If you started before, use the same email to continue where you stopped.",
-      fName: "Full name", fEmail: "Email", fPhone: "Mobile (optional)",
-      fOrg: "Organization (optional)", fSpec: "Discipline",
-      specArch: "Architectural", specMech: "Mechanical", specElec: "Electrical", specCivil: "Civil / Structural",
-      specEnv: "Environmental", specOther: "Other",
-      resumeHint: "Your progress is saved on this device. Use the same email to continue.",
-      start: "Start", chooseDay: "Choose a day", switchUser: "Switch trainee",
-      howTitle: "How scoring works",
-      rules: [
-        "Each question has {s} seconds. Four options, one correct answer.",
-        "Questions get harder: easy, then medium, then smart. Medium counts x1.5, smart x2.",
-        "The faster you answer, the more speed bonus you earn.",
-        "A correct answer within {c} seconds builds a combo that raises your multiplier up to x{m}.",
-        "A wrong or slow answer breaks the combo.",
-        "After each question the reason is shown. Read it before moving on."
-      ],
-      score: "Score", combo: "Multiplier", question: "Question", level: "Level",
-      easy: "Easy", medium: "Medium", hard: "Smart",
-      correct: "Correct", wrong: "Wrong", timeout: "Time's up",
-      correctWas: "Correct answer: ", points: "points", speed: "speed", mult: "multiplier",
-      next: "Next", finishBtn: "See result", seeOtherLang: "عربي", saveExit: "Save and exit to days",
-      finished: "Well done! Day completed", reviewWrong: "Review mistakes", restartDay: "Restart this day",
-      otherDays: "Other days", day: "Day", questions: "questions", notStarted: "Not started",
-      inProgress: "Continue from question {n}", done: "Completed — {p} points", defaultTag: "Default",
-      statCorrect: "Correct", statAccuracy: "Accuracy", statBestCombo: "Best combo", statAvgTime: "Avg. time",
-      sec: "s", confirmRestart: "Your progress for this day will be erased. Start again?",
-      yourAnswer: "Your answer: ", noAnswer: "No answer", noWrong: "No mistakes. Excellent!",
-      badges: ["Green Starter", "Aware Engineer", "Sustainability Expert", "Green Building Champion"],
-      comboWord: "COMBO"
+      title: "Green Buildings Challenge", sub: "Answer fast and right, collect coins, and top the board!",
+      name: "Full name", email: "Email", phone: "Mobile (optional)", org: "Organization (optional)",
+      spec: "Discipline", specs: { architecture: "Architectural", mechanical: "Mechanical", electrical: "Electrical", civil: "Civil / Structural", environmental: "Environmental", other: "Other" },
+      go: "Let's go!", hint: "Use the same email to continue where you stopped.",
+      hello: "Hi", pickDay: "Pick a day", day: "Day", start: "Start", resume: "Continue from question", replay: "See result",
+      notStarted: "Not started", done: "Done", rules: "30 s per question • faster = more points • 3 quick correct answers = combo",
+      q: "Question", easy: "Easy", medium: "Medium", hard: "Smart",
+      right: ["Excellent!", "Correct!", "Great!", "Well done!"], wrong: "Wrong answer", timeout: "Time's up!",
+      correctIs: "Correct: ", next: "Next →", finish: "Result 🏁", seeAlt: "Read the reason in Arabic",
+      combo: "COMBO", home: "Days", resultTitle: "Day complete!", correct: "Correct", accuracy: "Accuracy",
+      bestCombo: "Best combo", avg: "Avg. time", sec: "s", review: "Review my mistakes", again: "Replay day",
+      confirmAgain: "Your progress and points for this day will be erased. Sure?", noMistakes: "No mistakes. Excellent!", you: "you",
+      yours: "Your answer: ", none: "No answer",
+      board: "Leaderboard", live: "Live", offline: "Offline", connecting: "Connecting…", denied: "Offline (check database rules)",
+      empty: "No players yet. Be the first!", myRank: "Your rank {r} of {n}", answered: "answered", pts: "pts",
+      badges: ["🌱 Green Starter", "🌿 Aware Engineer", "🌳 Sustainability Expert", "🏆 Green Building Champion"],
+      logout: "Switch trainee", langBtn: "عربي"
     }
   };
 
-  // ---------- storage ----------
-  function load(key, fallback) {
-    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
-  }
-  function save(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* storage blocked: progress lives in memory only */ }
-  }
+  // ---------------- state ----------------
+  const load = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode */ } };
 
-  let users = load(KEY_USERS, {});
-  let currentId = load(KEY_CURRENT, null);
-  let lang = load(KEY_LANG, "ar");
-  let activeDay = null;
-  let timerHandle = null;
-  let qStart = 0;
-  let answered = false;
-  let feedbackLang = null;
+  let users = load(KEY.users, {});
+  let uid = load(KEY.current, null);
+  let lang = load(KEY.lang, "ar");
+  let soundOn = load(KEY.sound, CFG.soundOn);
+  let selectedDay = String(CFG.defaultDay);
+  let boardDay = selectedDay;
+  let screen = "login";
+  let timer = null, qStart = 0, answered = false, altReason = false, reviewOpen = false;
 
   const $ = (id) => document.getElementById(id);
   const t = (k) => T[lang][k];
-  const fmt = (s, map) => s.replace(/\{(\w)\}/g, (_, k) => map[k]);
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const me = () => (uid ? users[uid] : null);
+  const persist = () => { save(KEY.users, users); save(KEY.current, uid); };
+  const days = () => Object.keys(DATA.days).sort();
+  const qs = (d) => DATA.days[d].questions;
 
-  function user() { return currentId ? users[currentId] : null; }
-  function persist() { save(KEY_USERS, users); save(KEY_CURRENT, currentId); }
-
-  function dayState(day) {
-    const u = user();
-    if (!u.days[day]) u.days[day] = { index: 0, score: 0, streak: 0, bestStreak: 0, answers: [], finished: false };
-    return u.days[day];
+  // short stable id from email, so emails never appear in database keys
+  function hashId(s) {
+    let h1 = 0x811c9dc5, h2 = 0x1b873593;
+    for (let i = 0; i < s.length; i++) {
+      const c = s.charCodeAt(i);
+      h1 = Math.imul(h1 ^ c, 16777619);
+      h2 = Math.imul(h2 ^ c, 2246822507);
+    }
+    return "u" + (h1 >>> 0).toString(36) + (h2 >>> 0).toString(36);
   }
 
-  // ---------- language ----------
+  function dayState(d) {
+    const u = me();
+    if (!u.days[d]) u.days[d] = { index: 0, score: 0, streak: 0, bestStreak: 0, correct: 0, answers: [], finished: false };
+    return u.days[d];
+  }
+
+  // ---------------- sound (Web Audio, no files) ----------------
+  let ctx = null;
+  function tone(freq, start, dur, type, vol) {
+    if (!soundOn) return;
+    try {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type || "triangle";
+      o.frequency.value = freq;
+      const t0 = ctx.currentTime + start;
+      g.gain.setValueAtTime(vol || 0.12, t0);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+      o.connect(g).connect(ctx.destination);
+      o.start(t0); o.stop(t0 + dur);
+    } catch (e) { /* audio unavailable */ }
+  }
+  const SFX = {
+    tap() { tone(660, 0, 0.06, "sine", 0.08); },
+    right() { tone(784, 0, 0.09); tone(1175, 0.08, 0.28); },
+    wrong() { tone(260, 0, 0.16, "sawtooth", 0.08); tone(196, 0.15, 0.3, "sawtooth", 0.08); },
+    combo() { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.07, 0.14, "square", 0.07)); },
+    tick() { tone(1200, 0, 0.04, "square", 0.05); },
+    start() { [440, 554, 659].forEach((f, i) => tone(f, i * 0.09, 0.13, "triangle")); },
+    rankUp() { tone(880, 0, 0.08, "sine"); tone(1320, 0.08, 0.16, "sine"); },
+    fanfare() { [523, 659, 784, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.13, 0.2, "square", 0.08)); }
+  };
+
+  // ---------------- Firebase ----------------
+  let db = null, boardRef = null, boardData = {}, lastRank = null, sync = "connecting";
+  const root = CFG.rootPath || "gbquiz";
+  function initDb() {
+    try {
+      if (typeof firebase === "undefined" || !CFG.firebase || !CFG.firebase.databaseURL) { sync = "offline"; return renderBoard(); }
+      if (!firebase.apps.length) firebase.initializeApp(CFG.firebase);
+      db = firebase.database();
+      db.ref(".info/connected").on("value", (s) => { if (sync !== "denied") { sync = s.val() ? "live" : "connecting"; renderSync(); } });
+      watchBoard();
+    } catch (e) { sync = "offline"; renderBoard(); }
+  }
+  function watchBoard() {
+    if (!db) return renderBoard();
+    if (boardRef) boardRef.off();
+    boardData = {};
+    lastRank = null;
+    boardRef = db.ref(root + "/day" + boardDay + "/board");
+    boardRef.on("value",
+      (s) => { boardData = s.val() || {}; renderBoard(); },
+      () => { sync = "denied"; renderBoard(); });
+  }
+  function pushProgress(d) {
+    const u = me();
+    renderBoard(); // update at once with local data, before the database answers
+    if (!db || !u) return;
+    const st = dayState(d);
+    const row = {
+      name: u.profile.name, org: u.profile.org || "", spec: u.profile.spec || "",
+      score: st.score, answered: st.index + (answered ? 1 : 0), correct: st.correct,
+      bestCombo: st.bestStreak, finished: !!st.finished, updatedAt: new Date().toISOString()
+    };
+    db.ref(root + "/day" + d + "/board/" + uid).set(row).catch(() => {});
+    db.ref(root + "/progress/" + uid + "/day" + d).set({
+      index: st.index, score: st.score, streak: st.streak, bestStreak: st.bestStreak,
+      correct: st.correct, answeredCount: st.answers.length, finished: !!st.finished
+    }).catch(() => {});
+  }
+  function pushProfile() {
+    const u = me();
+    if (!db || !u) return;
+    const p = { name: u.profile.name, org: u.profile.org || "", spec: u.profile.spec || "", lastSeen: new Date().toISOString() };
+    if (CFG.sendContactDetails) { p.email = u.profile.email; p.phone = u.profile.phone || ""; }
+    db.ref(root + "/trainees/" + uid).update(p).catch(() => {});
+  }
+  // continue on another device: take the remote progress if it is further along
+  function pullProgress() {
+    if (!db || !uid) return Promise.resolve();
+    return db.ref(root + "/progress/" + uid).once("value").then((s) => {
+      const remote = s.val() || {};
+      days().forEach((d) => {
+        const r = remote["day" + d];
+        if (!r) return;
+        const st = dayState(d);
+        if ((r.index || 0) > st.index || (r.finished && !st.finished)) {
+          Object.assign(st, { index: r.index || 0, score: r.score || 0, streak: r.streak || 0, bestStreak: r.bestStreak || 0, correct: r.correct || 0, finished: !!r.finished });
+        }
+      });
+      persist();
+    }).catch(() => {});
+  }
+
+  // ---------------- board rendering ----------------
+  function renderSync() {
+    $("syncDot").className = "dot" + (sync === "live" ? " live" : "");
+    $("syncLabel").textContent = { live: t("live"), offline: t("offline"), connecting: t("connecting"), denied: t("denied") }[sync];
+  }
+  function renderBoard() {
+    renderSync();
+    $("boardTitle").textContent = t("board");
+    const tabs = $("boardTabs");
+    tabs.innerHTML = days().map((d) => '<button type="button" data-d="' + d + '" class="' + (d === boardDay ? "active" : "") + '">' + esc(t("day")) + " " + d + "</button>").join("");
+    tabs.querySelectorAll("button").forEach((b) => b.onclick = () => { boardDay = b.dataset.d; watchBoard(); renderBoard(); });
+
+    const rows = Object.keys(boardData).map((k) => Object.assign({ id: k }, boardData[k]));
+    // show yourself even before the first save reaches the database
+    if (me() && me().days[boardDay] && !boardData[uid]) {
+      const st = me().days[boardDay];
+      rows.push({ id: uid, name: me().profile.name, org: me().profile.org, score: st.score, answered: st.index, correct: st.correct });
+    }
+    rows.sort((a, b) => (b.score || 0) - (a.score || 0) || (b.correct || 0) - (a.correct || 0));
+    const total = qs(boardDay).length;
+    const list = $("boardList");
+    if (!rows.length) { list.innerHTML = '<li class="empty">' + esc(t("empty")) + "</li>"; $("myRank").textContent = ""; return; }
+    const medal = ["🥇", "🥈", "🥉"];
+    list.innerHTML = rows.slice(0, CFG.leaderboardSize).map((r, i) => {
+      const mine = r.id === uid;
+      return '<li class="board-item ' + (i < 3 ? "t" + (i + 1) : "") + (mine ? " me" : "") + '">' +
+        '<span class="rank">' + (medal[i] || i + 1) + "</span>" +
+        '<span class="who"><b>' + esc(r.name) + (mine ? " (" + esc(t("you")) + ")" : "") + "</b>" +
+        "<span>" + (r.finished ? "🏁 " : "") + Math.min(r.answered || 0, total) + "/" + total + " " + esc(t("answered")) + (r.org ? " • " + esc(r.org) : "") + "</span></span>" +
+        '<span class="pts">' + (r.score || 0) + "</span></li>";
+    }).join("");
+    const rank = rows.findIndex((r) => r.id === uid) + 1;
+    $("myRank").textContent = rank ? t("myRank").replace("{r}", "#" + rank).replace("{n}", rows.length) : "";
+    if (rank && lastRank && rank < lastRank) {
+      SFX.rankUp();
+      const el = list.querySelector(".me");
+      if (el) el.classList.add("bump");
+    }
+    if (rank) lastRank = rank;
+  }
+
+  // ---------------- screens ----------------
   function applyLang() {
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
-    document.querySelectorAll("[data-i18n]").forEach((el) => {
-      const v = t(el.getAttribute("data-i18n"));
-      if (typeof v === "string") el.textContent = v;
+    document.title = t("title");
+    $("langBtn").textContent = t("langBtn");
+    $("soundBtn").textContent = soundOn ? "🔊" : "🔇";
+    $("logoutBtn").textContent = t("logout");
+    $("logoutBtn").classList.toggle("hidden", !me());
+    render(true);
+    renderBoard();
+  }
+
+  function render(keepTimer) {
+    const c = $("card");
+    if (screen === "login") return renderLogin(c);
+    if (screen === "home") return renderHome(c);
+    if (screen === "quiz") return renderQuiz(c, keepTimer);
+    if (screen === "result") return renderResult(c);
+  }
+
+  function renderLogin(c) {
+    const p = (me() && me().profile) || {};
+    c.innerHTML =
+      '<div class="mascot">🏡</div><h1>' + esc(t("title")) + '</h1><p class="subtitle">' + esc(t("sub")) + "</p>" +
+      '<form id="f">' +
+      '<input name="name" required maxlength="60" placeholder="' + esc(t("name")) + '" value="' + esc(p.name) + '">' +
+      '<input name="email" type="email" required maxlength="120" placeholder="' + esc(t("email")) + '" value="' + esc(p.email) + '">' +
+      '<div class="row2"><input name="phone" type="tel" maxlength="30" placeholder="' + esc(t("phone")) + '" value="' + esc(p.phone) + '">' +
+      '<input name="org" maxlength="80" placeholder="' + esc(t("org")) + '" value="' + esc(p.org) + '"></div>' +
+      '<select name="spec">' + Object.keys(t("specs")).map((k) => '<option value="' + k + '"' + (p.spec === k ? " selected" : "") + ">" + esc(t("spec")) + ": " + esc(t("specs")[k]) + "</option>").join("") + "</select>" +
+      '<p class="hint">' + esc(t("hint")) + "</p>" +
+      '<div style="text-align:center"><button class="big-btn" type="submit">' + esc(t("go")) + "</button></div></form>";
+    $("f").onsubmit = (e) => {
+      e.preventDefault();
+      const f = new FormData(e.target);
+      const email = String(f.get("email")).trim().toLowerCase();
+      const id = hashId(email);
+      const profile = { name: String(f.get("name")).trim(), email, phone: String(f.get("phone") || "").trim(), org: String(f.get("org") || "").trim(), spec: String(f.get("spec") || "") };
+      users[id] = users[id] || { profile, days: {} };
+      users[id].profile = profile;
+      uid = id;
+      persist();
+      SFX.start();
+      pushProfile();
+      screen = "home";
+      pullProgress().then(() => { if (screen === "home") render(); renderBoard(); });
+      applyLang();
+    };
+  }
+
+  function renderHome(c) {
+    const u = me();
+    const st = u.days[selectedDay];
+    const total = qs(selectedDay).length;
+    let label = t("start");
+    if (st && st.finished) label = t("replay");
+    else if (st && st.index > 0) label = t("resume") + " " + (st.index + 1);
+    c.innerHTML =
+      '<div class="mascot">🌱</div><h1>' + esc(t("hello")) + " " + esc(u.profile.name) + "!</h1>" +
+      '<p class="subtitle">' + esc(t("pickDay")) + "</p>" +
+      '<div class="days">' + days().map((d) => {
+        const s = u.days[d];
+        const status = s && s.finished ? "✅ " + s.score : s && s.index ? s.index + "/" + qs(d).length : t("notStarted");
+        return '<button type="button" class="day-btn' + (d === selectedDay ? " active" : "") + '" data-d="' + d + '"><span class="num">' + esc(t("day")) + " " + d + '</span><span class="st">' + esc(status) + "</span></button>";
+      }).join("") + "</div>" +
+      '<div class="day-title">' + esc(DATA.days[selectedDay].title[lang]) + " • " + total + " " + esc(t("q")) + "</div>" +
+      '<p class="hint" style="margin-top:.4rem">' + esc(t("rules")) + "</p>" +
+      '<button class="big-btn" id="goBtn" type="button">' + esc(label) + "</button>";
+    c.querySelectorAll(".day-btn").forEach((b) => b.onclick = () => {
+      SFX.tap();
+      selectedDay = b.dataset.d;
+      if (boardDay !== selectedDay) { boardDay = selectedDay; watchBoard(); }
+      render();
+      renderBoard();
     });
-    $("langBtn").textContent = lang === "ar" ? "English" : "عربي";
-    document.title = t("appTitle");
-    const u = user();
-    $("who").textContent = u ? u.profile.name : "";
-    $("logoutBtn").classList.toggle("hidden", !u);
-    renderRules();
-    if (!$("screen-days").classList.contains("hidden")) renderDays();
-    if (!$("screen-quiz").classList.contains("hidden")) renderQuestion(true);
-    if (!$("screen-result").classList.contains("hidden")) renderResult();
+    $("goBtn").onclick = () => {
+      const s = dayState(selectedDay);
+      persist();
+      if (s.answers.length > s.index) s.index = s.answers.length; // answered before leaving
+      if (s.finished) { screen = "result"; reviewOpen = false; }
+      else { screen = "quiz"; answered = false; SFX.start(); }
+      render();
+    };
   }
 
-  function qText(q, l) { return (q[l] && q[l].question) ? q[l] : q.ar; }
+  function multiplier(streak) { return Math.min(CFG.comboMax, 1 + CFG.comboStep * Math.max(0, streak - 1)); }
+  function L(q, l) { return q[l] && q[l].question ? q[l] : q.ar; }
 
-  // ---------- screens ----------
-  function show(id) {
-    ["screen-login", "screen-days", "screen-quiz", "screen-result"].forEach((s) => $(s).classList.toggle("hidden", s !== id));
-    window.scrollTo(0, 0);
-  }
-
-  function renderRules() {
-    const list = $("rulesList");
-    list.innerHTML = "";
-    t("rules").forEach((r) => {
-      const li = document.createElement("li");
-      li.textContent = fmt(r, { s: CFG.secondsPerQuestion, c: CFG.comboWindowSeconds, m: CFG.comboMax });
-      list.appendChild(li);
-    });
-  }
-
-  function renderDays() {
-    const box = $("dayCards");
-    box.innerHTML = "";
-    Object.keys(DATA.days).sort().forEach((d) => {
-      const day = DATA.days[d];
-      const st = user().days[d];
-      const total = day.questions.length;
-      const card = document.createElement("div");
-      card.className = "day-card" + (Number(d) === CFG.defaultDay ? " default" : "");
-      let status = t("notStarted");
-      let pct = 0;
-      if (st && st.finished) { status = fmt(t("done"), { p: st.score }); pct = 100; }
-      else if (st && st.index > 0) { status = fmt(t("inProgress"), { n: st.index + 1 }); pct = Math.round(st.index / total * 100); }
-      card.innerHTML =
-        '<span class="day-tag"></span><h3></h3><div class="muted"></div>' +
-        '<div class="day-meta"></div><div class="mini-bar"><div></div></div>';
-      card.querySelector(".day-tag").textContent = t("day") + " " + d + (Number(d) === CFG.defaultDay ? " · " + t("defaultTag") : "");
-      card.querySelector("h3").textContent = day.title[lang] || day.title.ar;
-      card.querySelector(".muted").textContent = total + " " + t("questions");
-      card.querySelector(".day-meta").textContent = status;
-      card.querySelector(".mini-bar > div").style.width = pct + "%";
-      card.addEventListener("click", () => openDay(d));
-      box.appendChild(card);
-    });
-  }
-
-  function openDay(d) {
-    activeDay = d;
-    const st = dayState(d);
-    // a question answered just before leaving is not shown again
-    if (st.answers.length > st.index) st.index = st.answers.length;
-    persist();
-    if (st.finished) { show("screen-result"); renderResult(); return; }
-    show("screen-quiz");
-    renderQuestion(false);
-  }
-
-  // ---------- quiz ----------
-  function currentQuestion() { return DATA.days[activeDay].questions[dayState(activeDay).index]; }
-
-  function multiplier(streak) {
-    return Math.min(CFG.comboMax, 1 + CFG.comboStep * Math.max(0, streak - 1));
-  }
-
-  function renderHud() {
-    const st = dayState(activeDay);
-    const total = DATA.days[activeDay].questions.length;
-    $("hudScore").textContent = st.score;
-    $("hudCombo").textContent = "x" + (+multiplier(st.streak).toFixed(2));
-    $("hudCount").textContent = Math.min(st.index + 1, total) + " / " + total;
-    const q = currentQuestion();
-    $("hudLevel").textContent = q ? t(q.level) : "";
-    $("progressBar").style.width = (st.index / total * 100) + "%";
-  }
-
-  // rerender=true redraws text after a language switch without restarting the timer
-  function renderQuestion(rerender) {
-    const q = currentQuestion();
+  function renderQuiz(c, keepTimer) {
+    const st = dayState(selectedDay);
+    const list = qs(selectedDay);
+    const q = list[st.index];
     if (!q) return finishDay();
-    renderHud();
-    const L = qText(q, lang);
-    $("qText").textContent = L.question;
-    const opts = $("options");
-    opts.innerHTML = "";
-    LETTERS.forEach((letter, i) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "opt";
-      b.dataset.letter = letter;
-      b.innerHTML = '<span class="key"></span><span class="txt"></span>';
-      b.querySelector(".key").textContent = lang === "ar" ? "أبجد"[i] : letter;
-      b.querySelector(".txt").textContent = L.options[letter];
-      b.addEventListener("click", () => choose(letter));
-      opts.appendChild(b);
-    });
-    if (rerender && answered) {
-      markOptions(dayState(activeDay).answers.slice(-1)[0]);
-      renderFeedback(dayState(activeDay).answers.slice(-1)[0]);
-      return;
-    }
-    if (rerender) return;
-    answered = false;
-    feedbackLang = null;
-    $("feedback").classList.add("hidden");
-    startTimer();
+    const txt = L(q, lang);
+    const mult = multiplier(st.streak);
+    c.innerHTML =
+      '<div class="hud"><span>' + esc(t("q")) + " " + (st.index + 1) + "/" + list.length + ' <span class="level-tag level-' + q.level + '">' + esc(t(q.level)) + "</span></span>" +
+      '<span class="combo-chip' + (st.streak >= 2 ? " hot" : "") + '">×' + (+mult.toFixed(2)) + "</span>" +
+      '<span class="coins" id="coins">🪙 ' + st.score + "</span></div>" +
+      '<div class="track"><div class="fill" style="width:' + (st.index / list.length * 100) + '%"></div></div>' +
+      '<div class="timer" id="timer"><div id="timerFill"></div></div>' +
+      '<div class="question">' + esc(txt.question) + "</div>" +
+      '<div class="answers">' + LETTERS.map((k, i) =>
+        '<button class="answer-btn" type="button" data-k="' + k + '"><span class="k">' + (lang === "ar" ? AR_KEYS[i] : k) + "</span><span>" + esc(txt.options[k]) + "</span></button>").join("") + "</div>" +
+      '<div id="fb"></div>';
+    c.querySelectorAll(".answer-btn").forEach((b) => b.onclick = (e) => choose(b.dataset.k, e));
+    if (answered) { showFeedback(st.answers[st.answers.length - 1]); return; }
+    if (!keepTimer || !timer) startTimer();
   }
 
   function startTimer() {
-    clearInterval(timerHandle);
+    clearInterval(timer);
     qStart = Date.now();
     const total = CFG.secondsPerQuestion * 1000;
+    let lastSec = null;
     const tick = () => {
       const left = Math.max(0, total - (Date.now() - qStart));
-      $("timerBar").style.width = (left / total * 100) + "%";
-      $("timerBar").classList.toggle("low", left < 6000);
-      $("timerText").textContent = Math.ceil(left / 1000) + t("sec");
-      if (left <= 0) { clearInterval(timerHandle); choose(null); }
+      const bar = $("timerFill");
+      if (bar) bar.style.width = (left / total * 100) + "%";
+      const tw = $("timer");
+      if (tw) tw.classList.toggle("low", left < 6000);
+      const sec = Math.ceil(left / 1000);
+      if (left < 5500 && sec !== lastSec && left > 0) SFX.tick();
+      lastSec = sec;
+      if (left <= 0) { clearInterval(timer); timer = null; choose(null); }
     };
     tick();
-    timerHandle = setInterval(tick, 200);
+    timer = setInterval(tick, 200);
   }
 
-  function choose(letter) {
+  function choose(k, ev) {
     if (answered) return;
     answered = true;
-    clearInterval(timerHandle);
-    const q = currentQuestion();
-    const st = dayState(activeDay);
+    altReason = false;
+    clearInterval(timer); timer = null;
+    const st = dayState(selectedDay);
+    const q = qs(selectedDay)[st.index];
     const ms = Math.min(Date.now() - qStart, CFG.secondsPerQuestion * 1000);
-    const isCorrect = letter === q.answer;
-    let points = 0, speed = 0, mult = 1;
-    if (isCorrect) {
-      const fast = ms <= CFG.comboWindowSeconds * 1000;
-      st.streak = fast ? st.streak + 1 : 0;
+    const ok = k === q.answer;
+    let points = 0, mult = 1;
+    if (ok) {
+      st.streak = ms <= CFG.comboWindowSeconds * 1000 ? st.streak + 1 : 0;
       st.bestStreak = Math.max(st.bestStreak, st.streak);
-      const remaining = 1 - ms / (CFG.secondsPerQuestion * 1000);
-      speed = Math.round(CFG.maxSpeedBonus * remaining);
       mult = multiplier(st.streak);
-      const base = CFG.basePoints * (CFG.levelWeight[q.level] || 1);
-      points = Math.round((base + speed) * mult);
+      const speed = Math.round(CFG.maxSpeedBonus * (1 - ms / (CFG.secondsPerQuestion * 1000)));
+      points = Math.round((CFG.basePoints * (CFG.levelWeight[q.level] || 1) + speed) * mult);
       st.score += points;
-      if (st.streak >= 2) comboPop(st.streak, mult);
+      st.correct += 1;
+      SFX.right();
+      if (ev) coinBurst(ev.clientX, ev.clientY);
+      if (st.streak >= 2) { setTimeout(SFX.combo, 180); popText(t("combo") + " " + st.streak, "×" + (+mult.toFixed(2))); }
     } else {
       st.streak = 0;
+      SFX.wrong();
+      if (navigator.vibrate) navigator.vibrate(120);
     }
-    const rec = { id: q.id, chosen: letter, correct: isCorrect, ms, points, speed, mult };
-    st.answers.push(rec);
+    st.answers.push({ id: q.id, chosen: k, correct: ok, ms, points, mult });
     persist();
-    renderHud();
-    markOptions(rec);
-    renderFeedback(rec);
+    pushProgress(selectedDay);
+    render(true);
   }
 
-  function markOptions(rec) {
-    const q = currentQuestion();
-    document.querySelectorAll(".opt").forEach((b) => {
+  function showFeedback(rec) {
+    const st = dayState(selectedDay);
+    const list = qs(selectedDay);
+    const q = list[st.index];
+    document.querySelectorAll(".answer-btn").forEach((b) => {
       b.disabled = true;
-      if (b.dataset.letter === q.answer) b.classList.add("correct");
-      else if (b.dataset.letter === rec.chosen) b.classList.add("wrong");
+      if (b.dataset.k === q.answer) b.classList.add("correct");
+      else if (b.dataset.k === rec.chosen) b.classList.add("wrong");
+      else b.classList.add("dim");
     });
+    const rl = altReason ? (lang === "ar" ? "en" : "ar") : lang;
+    const txt = L(q, rl);
+    const hasAlt = q.en && q.en.reason;
+    const head = rec.correct
+      ? t("right")[st.index % 4] + " +" + rec.points + " 🪙"
+      : (rec.chosen ? t("wrong") : t("timeout")) + " • " + t("correctIs") + (lang === "ar" ? AR_KEYS[LETTERS.indexOf(q.answer)] : q.answer);
+    const last = st.index + 1 >= list.length;
+    $("fb").innerHTML =
+      '<div class="feedback ' + (rec.correct ? "good" : "bad") + '">' + esc(head) + "</div>" +
+      '<div class="why-box" dir="' + (rl === "ar" ? "rtl" : "ltr") + '">💡 ' + esc(txt.reason) +
+      (hasAlt ? '<span class="alt" id="altBtn">' + esc(altReason ? (lang === "ar" ? "اقرأ بالعربية" : "Read in English") : t("seeAlt")) + "</span>" : "") + "</div>" +
+      '<div class="actions"><button class="big-btn" id="nextBtn" type="button">' + esc(last ? t("finish") : t("next")) + "</button></div>";
+    if (hasAlt) $("altBtn").onclick = () => { altReason = !altReason; showFeedback(rec); };
+    $("nextBtn").onclick = next;
+    $("nextBtn").focus({ preventScroll: true });
   }
 
-  function renderFeedback(rec) {
-    const q = currentQuestion();
-    const fl = feedbackLang || lang;
-    const L = qText(q, fl);
-    const title = $("fbTitle");
-    title.className = "fb-title " + (rec.correct ? "good" : "bad");
-    title.textContent = rec.correct ? t("correct") : (rec.chosen ? t("wrong") : t("timeout"));
-    $("fbPoints").textContent = rec.correct
-      ? "+" + rec.points + " " + t("points") + "  (" + t("speed") + " +" + rec.speed + ", " + t("mult") + " x" + rec.mult + ")"
-      : t("correctWas") + (lang === "ar" ? "أبجد"[LETTERS.indexOf(q.answer)] : q.answer);
-    const reasonBox = $("fbReason");
-    reasonBox.textContent = L.reason;
-    reasonBox.dir = fl === "ar" ? "rtl" : "ltr";
-    const hasOther = q.en && q.en.reason;
-    $("otherLangBtn").classList.toggle("hidden", !hasOther);
-    $("otherLangBtn").textContent = fl === "ar" ? "English" : "عربي";
-    const st = dayState(activeDay);
-    $("nextBtn").textContent = st.index + 1 >= DATA.days[activeDay].questions.length ? t("finishBtn") : t("next");
-    $("feedback").classList.remove("hidden");
-    $("nextBtn").focus();
-  }
-
-  function nextQuestion() {
-    const st = dayState(activeDay);
+  function next() {
+    const st = dayState(selectedDay);
     st.index += 1;
-    persist();
-    if (st.index >= DATA.days[activeDay].questions.length) return finishDay();
-    renderQuestion(false);
-  }
-
-  function comboPop(streak, mult) {
-    const el = $("comboPop");
-    el.innerHTML = "<div></div><div class='combo-mult'></div>";
-    el.firstChild.textContent = t("comboWord") + " " + streak;
-    el.lastChild.textContent = "×" + mult;
-    el.classList.remove("hidden");
-    el.style.animation = "none";
-    void el.offsetWidth;
-    el.style.animation = "";
-    clearTimeout(comboPop._h);
-    comboPop._h = setTimeout(() => el.classList.add("hidden"), 1000);
-  }
-
-  // ---------- results ----------
-  function finishDay() {
-    clearInterval(timerHandle);
-    const st = dayState(activeDay);
-    const firstFinish = !st.finished;
-    st.finished = true;
-    st.finishedAt = new Date().toISOString();
-    persist();
-    show("screen-result");
-    renderResult();
-    if (firstFinish) { confetti(); sendResult(); }
-  }
-
-  function renderResult() {
-    const st = dayState(activeDay);
-    const n = st.answers.length || 1;
-    const correct = st.answers.filter((a) => a.correct).length;
-    const acc = Math.round(correct / n * 100);
-    const avg = (st.answers.reduce((s, a) => s + a.ms, 0) / n / 1000).toFixed(1);
-    $("finalScore").textContent = st.score;
-    const badges = t("badges");
-    $("finalBadge").textContent = badges[acc >= 90 ? 3 : acc >= 75 ? 2 : acc >= 50 ? 1 : 0];
-    const stats = [
-      [t("statCorrect"), correct + " / " + st.answers.length],
-      [t("statAccuracy"), acc + "%"],
-      [t("statBestCombo"), st.bestStreak],
-      [t("statAvgTime"), avg + " " + t("sec")]
-    ];
-    const box = $("finalStats");
-    box.innerHTML = "";
-    stats.forEach(([k, v]) => {
-      const d = document.createElement("div");
-      d.className = "stat";
-      d.innerHTML = '<span class="muted"></span><strong></strong>';
-      d.querySelector("span").textContent = k;
-      d.querySelector("strong").textContent = v;
-      box.appendChild(d);
-    });
-    $("reviewList").classList.add("hidden");
-  }
-
-  function renderReview() {
-    const st = dayState(activeDay);
-    const byId = {};
-    DATA.days[activeDay].questions.forEach((q) => { byId[q.id] = q; });
-    const list = $("reviewList");
-    list.innerHTML = "";
-    const wrong = st.answers.filter((a) => !a.correct);
-    if (!wrong.length) {
-      const p = document.createElement("div");
-      p.className = "review-item";
-      p.textContent = t("noWrong");
-      list.appendChild(p);
-    }
-    wrong.forEach((a) => {
-      const q = byId[a.id];
-      const L = qText(q, lang);
-      const item = document.createElement("div");
-      item.className = "review-item";
-      item.innerHTML = "<strong></strong><p class='yours'></p><p class='ans'></p><p class='muted'></p>";
-      item.querySelector("strong").textContent = L.question;
-      item.querySelector(".yours").textContent = t("yourAnswer") + (a.chosen ? L.options[a.chosen] : t("noAnswer"));
-      item.querySelector(".ans").textContent = t("correctWas") + L.options[q.answer];
-      item.querySelector(".muted").textContent = L.reason;
-      list.appendChild(item);
-    });
-    list.classList.toggle("hidden");
-  }
-
-  // ---------- optional Firebase (Firestore REST) ----------
-  function sendResult() {
-    const fb = CFG.firebase || {};
-    if (!fb.apiKey || !fb.projectId) return;
-    const u = user();
-    const st = dayState(activeDay);
-    const correct = st.answers.filter((a) => a.correct).length;
-    const str = (v) => ({ stringValue: String(v == null ? "" : v) });
-    const int = (v) => ({ integerValue: String(Math.round(v)) });
-    const body = {
-      fields: {
-        name: str(u.profile.name), email: str(u.profile.email), phone: str(u.profile.phone),
-        org: str(u.profile.org), spec: str(u.profile.spec), day: int(Number(activeDay)),
-        score: int(st.score), correct: int(correct), total: int(st.answers.length),
-        bestCombo: int(st.bestStreak), finishedAt: { timestampValue: st.finishedAt }
-      }
-    };
-    const url = "https://firestore.googleapis.com/v1/projects/" + encodeURIComponent(fb.projectId) +
-      "/databases/(default)/documents/" + encodeURIComponent(fb.collection) + "?key=" + encodeURIComponent(fb.apiKey);
-    fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-      .catch(() => { /* offline: the result stays saved on the device */ });
-  }
-
-  function confetti() {
-    const box = $("confetti");
-    const colors = ["#2fbf7f", "#f5b62a", "#1f8a5b", "#ffffff", "#7fd6ff"];
-    for (let i = 0; i < 90; i++) {
-      const p = document.createElement("div");
-      p.className = "confetti-piece";
-      p.style.left = Math.random() * 100 + "vw";
-      p.style.background = colors[i % colors.length];
-      p.style.animationDuration = 2 + Math.random() * 2.5 + "s";
-      p.style.animationDelay = Math.random() * 0.6 + "s";
-      box.appendChild(p);
-      setTimeout(() => p.remove(), 5500);
-    }
-  }
-
-  // ---------- events ----------
-  $("loginForm").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const f = new FormData(e.target);
-    const email = String(f.get("email")).trim().toLowerCase();
-    const profile = {
-      name: String(f.get("name")).trim(), email,
-      phone: String(f.get("phone") || "").trim(), org: String(f.get("org") || "").trim(),
-      spec: String(f.get("spec") || "")
-    };
-    if (!users[email]) users[email] = { profile, days: {}, createdAt: new Date().toISOString() };
-    else users[email].profile = Object.assign(users[email].profile, profile);
-    currentId = email;
-    persist();
-    applyLang();
-    show("screen-days");
-    renderDays();
-  });
-
-  $("langBtn").addEventListener("click", () => {
-    lang = lang === "ar" ? "en" : "ar";
-    save(KEY_LANG, lang);
-    feedbackLang = null;
-    applyLang();
-  });
-
-  $("logoutBtn").addEventListener("click", () => {
-    clearInterval(timerHandle);
-    currentId = null;
-    persist();
-    $("loginForm").reset();
-    applyLang();
-    show("screen-login");
-  });
-
-  $("nextBtn").addEventListener("click", nextQuestion);
-  $("otherLangBtn").addEventListener("click", () => {
-    feedbackLang = (feedbackLang || lang) === "ar" ? "en" : "ar";
-    renderFeedback(dayState(activeDay).answers.slice(-1)[0]);
-  });
-  $("backDaysBtn").addEventListener("click", () => {
-    clearInterval(timerHandle);
-    // an unanswered question restarts with a fresh timer when the trainee returns
     answered = false;
-    show("screen-days");
-    renderDays();
-  });
-  $("toDaysBtn").addEventListener("click", () => { show("screen-days"); renderDays(); });
-  $("reviewBtn").addEventListener("click", renderReview);
-  $("restartBtn").addEventListener("click", () => {
-    if (!confirm(t("confirmRestart"))) return;
-    delete user().days[activeDay];
     persist();
-    openDay(activeDay);
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if ($("screen-quiz").classList.contains("hidden")) return;
-    const k = e.key.toUpperCase();
-    const map = { "1": "A", "2": "B", "3": "C", "4": "D", A: "A", B: "B", C: "C", D: "D" };
-    if (!answered && map[k]) choose(map[k]);
-    else if (answered && e.key === "Enter" && e.target.tagName !== "BUTTON") nextQuestion();
-  });
-
-  // ---------- boot ----------
-  applyLang();
-  if (user()) {
-    // returning trainee: open the default day directly if untouched, otherwise show the day list
-    show("screen-days");
-    renderDays();
-  } else {
-    show("screen-login");
+    if (st.index >= qs(selectedDay).length) return finishDay();
+    pushProgress(selectedDay);
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  function finishDay() {
+    clearInterval(timer); timer = null;
+    const st = dayState(selectedDay);
+    const first = !st.finished;
+    st.finished = true;
+    persist();
+    pushProgress(selectedDay);
+    screen = "result";
+    reviewOpen = false;
+    render();
+    if (first) {
+      SFX.fanfare();
+      if (window.confetti) { confetti({ particleCount: 160, spread: 90, origin: { y: 0.6 } }); setTimeout(() => confetti({ particleCount: 90, spread: 120, origin: { y: 0.4 } }), 400); }
+    }
+  }
+
+  function renderResult(c) {
+    const st = dayState(selectedDay);
+    const n = st.answers.length || st.index || 1;
+    const acc = Math.round(st.correct / n * 100);
+    const avg = st.answers.length ? (st.answers.reduce((s, a) => s + a.ms, 0) / st.answers.length / 1000).toFixed(1) : "—";
+    const b = t("badges")[acc >= 90 ? 3 : acc >= 75 ? 2 : acc >= 50 ? 1 : 0];
+    const byId = {};
+    qs(selectedDay).forEach((q) => { byId[q.id] = q; });
+    const wrong = st.answers.filter((a) => !a.correct);
+    c.innerHTML =
+      '<div class="result-emoji">' + (acc >= 75 ? "🏆" : acc >= 50 ? "🌿" : "🌱") + "</div>" +
+      "<h1>" + esc(t("resultTitle")) + "</h1>" +
+      '<div class="result-score">🪙 ' + st.score + '</div><div class="badge">' + esc(b) + "</div>" +
+      '<div class="stats">' +
+      '<div class="stat">' + esc(t("correct")) + "<b>" + st.correct + "/" + n + "</b></div>" +
+      '<div class="stat">' + esc(t("accuracy")) + "<b>" + acc + "%</b></div>" +
+      '<div class="stat">' + esc(t("bestCombo")) + "<b>" + st.bestStreak + "</b></div>" +
+      '<div class="stat">' + esc(t("avg")) + "<b>" + avg + " " + esc(t("sec")) + "</b></div></div>" +
+      '<div class="actions"><button class="big-btn" id="homeBtn" type="button">' + esc(t("home")) + "</button>" +
+      '<button class="big-btn ghost" id="revBtn" type="button">' + esc(t("review")) + "</button>" +
+      '<button class="big-btn ghost" id="againBtn" type="button">' + esc(t("again")) + "</button></div>" +
+      (reviewOpen ? '<div class="review">' + (wrong.length ? wrong.map((a) => {
+        const q = byId[a.id], x = L(q, lang);
+        return '<div class="review-item"><b>' + esc(x.question) + '</b><div class="no">' + esc(t("yours")) + esc(a.chosen ? x.options[a.chosen] : t("none")) +
+          '</div><div class="ok">' + esc(t("correctIs")) + esc(x.options[q.answer]) + "</div><div>💡 " + esc(x.reason) + "</div></div>";
+      }).join("") : '<div class="review-item">' + esc(t("noMistakes")) + "</div>") + "</div>" : "");
+    $("homeBtn").onclick = () => { screen = "home"; render(); };
+    $("revBtn").onclick = () => { reviewOpen = !reviewOpen; render(); };
+    $("againBtn").onclick = () => {
+      if (!confirm(t("confirmAgain"))) return;
+      delete me().days[selectedDay];
+      dayState(selectedDay);
+      persist();
+      pushProgress(selectedDay);
+      screen = "quiz"; answered = false;
+      render();
+    };
+  }
+
+  // ---------------- effects ----------------
+  function coinBurst(x, y) {
+    for (let i = 0; i < 4; i++) {
+      const el = document.createElement("div");
+      el.className = "coin";
+      el.textContent = "🪙";
+      el.style.left = (x - 16 + (i - 1.5) * 26) + "px";
+      el.style.top = (y - 20) + "px";
+      el.style.animationDelay = i * 0.06 + "s";
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1100);
+    }
+  }
+  function popText(big, small) {
+    const el = document.createElement("div");
+    el.className = "pop";
+    el.innerHTML = esc(big) + "<small>" + esc(small) + "</small>";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  }
+
+  // ---------------- controls ----------------
+  $("langBtn").onclick = () => { lang = lang === "ar" ? "en" : "ar"; save(KEY.lang, lang); SFX.tap(); applyLang(); };
+  $("soundBtn").onclick = () => { soundOn = !soundOn; save(KEY.sound, soundOn); $("soundBtn").textContent = soundOn ? "🔊" : "🔇"; SFX.tap(); };
+  $("logoutBtn").onclick = () => {
+    clearInterval(timer); timer = null;
+    uid = null; persist();
+    screen = "login"; answered = false;
+    applyLang();
+  };
+  document.addEventListener("keydown", (e) => {
+    if (screen !== "quiz") return;
+    const map = { "1": "A", "2": "B", "3": "C", "4": "D", a: "A", b: "B", c: "C", d: "D" };
+    const k = map[e.key.toLowerCase()];
+    if (!answered && k) choose(k);
+  });
+
+  // ---------------- boot ----------------
+  if (me()) { screen = "home"; pullProgress().then(() => { if (screen === "home") render(); renderBoard(); }); }
+  applyLang();
+  setTimeout(initDb, 300);
+  if (me()) setTimeout(() => pullProgress().then(() => { if (screen === "home") render(); renderBoard(); }), 1200);
 })();
