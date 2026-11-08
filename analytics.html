@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#14213d">
+<title>تحليلات التحدي | Challenge Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Baloo+Bhaijaan+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
+<style>
+:root {
+  --bg: #f4f6fb; --card: #ffffff; --ink: #14213d; --muted: #66708a; --line: #e6e9f2;
+  --green: #2fbf4f; --green-soft: #e6f8ea; --purple: #7c5cbf; --purple-soft: #f0ebfa;
+  --yellow: #ffc83d; --yellow-soft: #fff6dc; --red: #e5484d; --red-soft: #fdecec; --blue: #3b82f6;
+  --radius: 20px; --shadow: 0 1px 2px rgba(20,33,61,.04), 0 8px 24px rgba(20,33,61,.06);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', 'Baloo Bhaijaan 2', system-ui, sans-serif; background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased; }
+html[lang="ar"] body { font-family: 'Baloo Bhaijaan 2', 'Inter', system-ui, sans-serif; }
+a { color: inherit; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+
+/* hero */
+.hero { background: radial-gradient(1200px 400px at 85% -20%, rgba(124,92,191,.55), transparent 60%), radial-gradient(900px 380px at 0% 0%, rgba(47,191,79,.45), transparent 60%), #14213d; color: #fff; padding: 22px 0 92px; }
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 1.05rem; }
+.brand .px { width: 38px; height: 38px; border-radius: 12px; background: rgba(255,255,255,.12); display: grid; place-items: center; }
+.top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { font: inherit; font-weight: 700; font-size: .85rem; border-radius: 999px; padding: .5rem 1rem; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: #fff; cursor: pointer; text-decoration: none; display: inline-flex; gap: 6px; align-items: center; }
+.btn:hover { background: rgba(255,255,255,.16); }
+.btn.solid { background: var(--yellow); color: #3a2a00; border-color: transparent; }
+.hero h1 { font-size: clamp(1.6rem, 3.6vw, 2.6rem); font-weight: 800; letter-spacing: -.02em; margin: 34px 0 6px; line-height: 1.2; }
+.hero p.lead { color: #c9d1e6; max-width: 720px; font-size: 1rem; }
+.live { display: inline-flex; align-items: center; gap: 8px; font-size: .82rem; color: #c9d1e6; margin-top: 14px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #9aa3b8; }
+.dot.on { background: #4ade80; box-shadow: 0 0 0 4px rgba(74,222,128,.2); animation: pulse 1.8s infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 8px rgba(74,222,128,0); } }
+.tabs { display: inline-flex; gap: 6px; background: rgba(255,255,255,.08); padding: 6px; border-radius: 999px; margin-top: 22px; border: 1px solid rgba(255,255,255,.12); }
+.tab { font: inherit; font-weight: 700; padding: .5rem 1.1rem; border-radius: 999px; border: 0; background: transparent; color: #c9d1e6; cursor: pointer; }
+.tab.active { background: #fff; color: var(--ink); }
+.tab small { opacity: .7; font-weight: 600; margin-inline-start: 4px; }
+
+/* layout */
+main { margin-top: -64px; padding-bottom: 60px; }
+.grid { display: grid; gap: 18px; }
+.kpis { grid-template-columns: repeat(6, 1fr); }
+.two { grid-template-columns: 1.4fr 1fr; }
+.two-eq { grid-template-columns: 1fr 1fr; }
+.three { grid-template-columns: repeat(3, 1fr); }
+.card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; border: 1px solid var(--line); min-width: 0; }
+.card h2 { font-size: 1.05rem; font-weight: 800; display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.card .sub { color: var(--muted); font-size: .85rem; margin-bottom: 14px; }
+.section-gap { margin-top: 18px; }
+
+.kpi { padding: 16px 18px; }
+.kpi .label { color: var(--muted); font-size: .78rem; font-weight: 600; }
+.kpi .value { font-size: 1.7rem; font-weight: 800; letter-spacing: -.02em; margin-top: 2px; }
+.kpi .hint { font-size: .75rem; color: var(--muted); }
+.kpi .icon { float: inline-end; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; font-size: 1rem; }
+
+/* bars */
+.bars { display: grid; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: minmax(90px, 34%) 1fr auto; gap: 10px; align-items: center; font-size: .86rem; }
+.bar-row .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); font-weight: 600; }
+.track { height: 10px; background: #eef1f7; border-radius: 999px; overflow: hidden; }
+.fill { height: 100%; border-radius: 999px; background: var(--purple); transition: width .8s cubic-bezier(.2,.8,.2,1); }
+.bar-row .num { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: end; }
+
+/* leaderboard */
+.lb { display: grid; gap: 8px; }
+.lb-row { display: grid; grid-template-columns: 2rem 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 14px; background: #f7f8fc; }
+.lb-row.me { outline: 2px solid var(--green); background: var(--green-soft); }
+.lb-row .r { font-weight: 800; text-align: center; color: var(--muted); }
+.lb-row .n { min-width: 0; }
+.lb-row .n b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-row .n span { font-size: .76rem; color: var(--muted); }
+.lb-row .s { font-weight: 800; font-variant-numeric: tabular-nums; }
+.pill { display: inline-block; font-size: .72rem; font-weight: 700; border-radius: 999px; padding: .1rem .55rem; }
+.pill.easy { background: var(--green-soft); color: #1f8a3a; } .pill.medium { background: var(--yellow-soft); color: #8a5a00; } .pill.hard { background: var(--red-soft); color: #b42318; }
+.pill.sec { background: var(--purple-soft); color: var(--purple); cursor: pointer; }
+
+/* me */
+.me-card { background: linear-gradient(135deg, #f0ebfa, #e6f8ea); border: 0; }
+.me-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 10px 0 14px; }
+.me-stat { background: rgba(255,255,255,.75); border-radius: 14px; padding: 10px 12px; }
+.me-stat .v { font-size: 1.35rem; font-weight: 800; }
+.me-stat .l { font-size: .75rem; color: var(--muted); }
+.vs { display: grid; grid-template-columns: minmax(110px, 40%) 1fr; gap: 6px 10px; align-items: center; font-size: .85rem; }
+.vs .pair { display: grid; gap: 3px; }
+.vs .track { height: 8px; }
+
+/* section mastery */
+.sec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.sec-tile { border-radius: 16px; padding: 14px; border: 1px solid var(--line); cursor: pointer; transition: transform .15s, box-shadow .15s; background: #fff; }
+.sec-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.sec-tile .code { font-size: .75rem; font-weight: 800; color: var(--muted); }
+.sec-tile .t { font-weight: 700; font-size: .9rem; margin: 2px 0 10px; min-height: 2.6em; line-height: 1.3; }
+.sec-tile .p { font-size: 1.5rem; font-weight: 800; }
+.sec-tile .meta { font-size: .75rem; color: var(--muted); }
+
+/* traps */
+.trap { border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; display: grid; gap: 8px; }
+.trap .q { font-weight: 700; line-height: 1.5; }
+.opts { display: grid; gap: 6px; }
+.opt { display: grid; grid-template-columns: 1.6rem 1fr 3.2rem; gap: 8px; align-items: center; font-size: .85rem; }
+.opt .k { width: 1.6rem; height: 1.6rem; border-radius: 8px; display: grid; place-items: center; font-weight: 800; background: #eef1f7; font-size: .8rem; }
+.opt.correct .k { background: var(--green); color: #fff; }
+.opt.trapped .k { background: var(--red); color: #fff; }
+.opt .ob { position: relative; background: #f3f5fa; border-radius: 8px; overflow: hidden; min-height: 26px; display: flex; align-items: center; }
+.opt .ob span { position: relative; z-index: 1; padding: 3px 8px; line-height: 1.35; }
+.opt .ob i { position: absolute; inset-block: 0; inset-inline-start: 0; background: #e3e8f3; }
+.opt.correct .ob i { background: #c9f0d2; } .opt.trapped .ob i { background: #fbd5d6; }
+.opt .pc { font-weight: 700; font-variant-numeric: tabular-nums; text-align: end; }
+.why { background: var(--yellow-soft); border-radius: 12px; padding: 10px 12px; font-size: .86rem; line-height: 1.6; }
+.meta-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: .78rem; color: var(--muted); }
+
+/* explorer */
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.filters input, .filters select { font: inherit; font-size: .9rem; padding: .55rem .8rem; border-radius: 12px; border: 1px solid var(--line); background: #fff; min-height: 42px; }
+.filters input { flex: 1 1 220px; }
+.qlist { display: grid; gap: 8px; }
+.qrow { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.qhead { display: grid; grid-template-columns: 4.6rem 1fr 7.5rem 3.4rem; gap: 10px; align-items: center; padding: 10px 12px; cursor: pointer; font-size: .86rem; }
+.qhead:hover { background: #fafbfe; }
+.qhead .id { font-weight: 800; color: var(--muted); font-size: .78rem; }
+.qhead .txt { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qhead .pct { font-weight: 800; text-align: end; }
+.qbody { padding: 0 12px 12px; display: none; }
+.qrow.open .qbody { display: grid; gap: 8px; }
+.qrow.open .qhead .txt { white-space: normal; }
+
+svg text { font-family: inherit; }
+.empty { text-align: center; color: var(--muted); padding: 30px 10px; }
+.foot { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 26px; }
+.insight { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 14px; background: #f7f8fc; font-size: .9rem; line-height: 1.55; }
+.insight .ic { font-size: 1.2rem; line-height: 1.3; }
+
+@media (max-width: 1000px) { .kpis { grid-template-columns: repeat(3, 1fr); } .two, .two-eq, .three { grid-template-columns: 1fr; } .me-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) {
+  .wrap { padding: 0 12px; }
+  .kpis { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpi .value { font-size: 1.35rem; }
+  .card { padding: 16px; border-radius: 16px; }
+  .qhead { grid-template-columns: 1fr 3.2rem; }
+  .qhead .id, .qhead .lv { display: none; }
+  .hero { padding-bottom: 84px; }
+  .tab { padding: .45rem .8rem; }
+}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand"><span class="px" id="logo"></span><span id="brandName"></span></div>
+      <div class="top-actions">
+        <a class="btn solid" href="index.html" id="playBtn"></a>
+        <button class="btn" id="langBtn" type="button"></button>
+      </div>
+    </div>
+    <h1 id="heroTitle"></h1>
+    <p class="lead" id="heroLead"></p>
+    <div class="live"><span class="dot" id="liveDot"></span><span id="liveText"></span></div><br>
+    <div class="tabs" id="tabs"></div>
+  </div>
+</header>
+
+<main class="wrap" id="main"></main>
+
+<script src="config.js"></script>
+<script src="lists.js"></script>
+<script src="sections.js"></script>
+<script src="data/questions.js"></script>
+<script>
+(function () {
+  "use strict";
+  const CFG = window.QUIZ_CONFIG, LS = window.QUIZ_LISTS, SEC = window.QUIZ_SECTIONS, DATA = window.QUIZ_DATA;
+  const ROOT = CFG.rootPath || "gbquiz";
+  const LET = ["A", "B", "C", "D"], AR = ["أ", "ب", "ج", "د"];
+  let lang = (() => { try { return JSON.parse(localStorage.getItem("gbq2:lang")) || "ar"; } catch (e) { return "ar"; } })();
+  let day = null, db = {}, live = false, showAll = false, filt = { q: "", sec: "", lvl: "", sort: "hard" }, openIds = new Set();
+  const myId = (() => { try { return JSON.parse(localStorage.getItem("gbq2:current")); } catch (e) { return null; } })();
+
+  const T = {
+    ar: {
+      brand: "تحدي المباني الخضراء", play: "▶ العب الآن", title: "تحليلات التحدي", lead: "ما الذي أتقنته المجموعة، وأين وقع معظمنا، وأي قسم من الدليل يستحق المراجعة. تتحدّث الأرقام مباشرة مع كل إجابة.",
+      live: "مباشر", connecting: "جارٍ الاتصال…", offline: "تعذّر الاتصال بقاعدة البيانات", updated: "آخر تحديث", day: "اليوم",
+      players: "المتسابقون", finished: "أنهوا اليوم", accuracy: "متوسط الدقة", answers: "إجابات", avgTime: "متوسط زمن الإجابة", top: "أعلى نقاط",
+      sec: "ث", ofTotal: "من {n}", noData: "لا توجد بيانات لهذا اليوم بعد. ستظهر التحليلات فور بدء أول متسابق.",
+      me: "أداؤك", meSub: "مقارنة بنتيجة المجموعة على هذا اليوم.", rank: "ترتيبك", score: "نقاطك", myAcc: "دقتك", group: "المجموعة", you: "أنت",
+      weak: "راجع هذه الأقسام أولًا", answered: "أجبت",
+      board: "المتصدرون", boardSub: "أعلى 10 نقاط. السرعة والكومبو يرفعان النقاط مع الدقة.",
+      insights: "أبرز الملاحظات", funnel: "إلى أين وصل المتسابقون؟", funnelSub: "عدد من وصلوا إلى كل سؤال.",
+      dist: "توزيع النقاط", distSub: "عدد المتسابقين في كل نطاق.",
+      levels: "الدقة حسب المستوى", easy: "سهل", medium: "متوسط", hard: "ذكي",
+      speed: "السرعة مقابل الدقة", speedSub: "نسبة الإجابات الصحيحة حسب زمن الإجابة.",
+      mastery: "إتقان أقسام الدليل", masterySub: "نسبة الإجابات الصحيحة لكل قسم. اضغط القسم لعرض أسئلته.",
+      traps: "الأسئلة التي أوقعت معظمنا", trapsSub: "الخيار الأحمر هو الخطأ الأكثر شيوعًا، والأخضر هو الصحيح، مع سبب الإجابة.",
+      explorer: "كل الأسئلة", explorerSub: "ابحث، أو صفِّ حسب القسم والمستوى، واضغط السؤال لعرض التفاصيل.",
+      search: "ابحث في الأسئلة…", allSec: "كل الأقسام", allLvl: "كل المستويات", sortHard: "الأصعب أولًا", sortEasy: "الأسهل أولًا", sortId: "بالترتيب",
+      who: "من يلعب؟", disc: "التخصص", city: "المدينة", nat: "الجنسية", section: "القسم", correct: "صحيح", n: "إجابة", notReached: "لم يصل إليه أحد بعد",
+      i_hardSec: "أضعف قسم: {s} — {p}% فقط إجابات صحيحة.", i_trap: "أكبر فخ: «{q}» — اختار {p}% الخيار «{o}».",
+      i_speed: "من أجاب خلال 5 ثوانٍ كان صحيحًا بنسبة {a}%، ومن تأخّر أكثر من 15 ثانية بنسبة {b}%.",
+      i_drop: "بدأ {s} وأنهى {f}. أكبر تراجع كان قبل السؤال {q}.", i_best: "أدق متسابق: {n} بدقة {p}%.",
+      foot: "البيانات من قاعدة بيانات التحدي. لا تُعرض عناوين البريد أو أرقام الجوال.", review: "راجع القسم", times: "مرة", langBtn: "English"
+    },
+    en: {
+      brand: "Green Buildings Challenge", play: "▶ Play now", title: "Challenge analytics", lead: "What the group has mastered, where most of us slipped, and which manual section is worth a second look. Numbers update live with every answer.",
+      live: "Live", connecting: "Connecting…", offline: "Could not reach the database", updated: "Last update", day: "Day",
+      players: "Players", finished: "Finished the day", accuracy: "Avg. accuracy", answers: "Answers", avgTime: "Avg. answer time", top: "Top score",
+      sec: "s", ofTotal: "of {n}", noData: "No data for this day yet. Analytics appear as soon as the first player starts.",
+      me: "Your performance", meSub: "Compared with the group on this day.", rank: "Your rank", score: "Your score", myAcc: "Your accuracy", group: "Group", you: "you",
+      weak: "Review these sections first", answered: "Answered",
+      board: "Leaderboard", boardSub: "Top 10 scores. Speed and combos add to accuracy.",
+      insights: "Key insights", funnel: "How far did players get?", funnelSub: "Number of players who reached each question.",
+      dist: "Score distribution", distSub: "Players in each score band.",
+      levels: "Accuracy by level", easy: "Easy", medium: "Medium", hard: "Smart",
+      speed: "Speed vs accuracy", speedSub: "Share of correct answers by answer time.",
+      mastery: "Manual section mastery", masterySub: "Share of correct answers per section. Tap a section to see its questions.",
+      traps: "Questions that caught most of us", trapsSub: "Red is the most common wrong answer, green is the correct one, with the reason.",
+      explorer: "All questions", explorerSub: "Search, filter by section and level, and tap a question for details.",
+      search: "Search questions…", allSec: "All sections", allLvl: "All levels", sortHard: "Hardest first", sortEasy: "Easiest first", sortId: "In order",
+      who: "Who's playing?", disc: "Discipline", city: "City", nat: "Nationality", section: "Section", correct: "correct", n: "answers", notReached: "Nobody has reached it yet",
+      i_hardSec: "Weakest section: {s} — only {p}% correct.", i_trap: "Biggest trap: “{q}” — {p}% chose “{o}”.",
+      i_speed: "Answers within 5 s were {a}% correct; answers after 15 s were {b}% correct.",
+      i_drop: "{s} started and {f} finished. The biggest drop came before question {q}.", i_best: "Most accurate player: {n} at {p}%.",
+      foot: "Data from the challenge database. Emails and phone numbers are never shown.", review: "Review section", times: "times", langBtn: "عربي"
+    }
+  };
+  const t = (k) => T[lang][k];
+  const f = (s, m) => s.replace(/\{(\w+)\}/g, (_, k) => m[k]);
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmt = (n) => Number(n || 0).toLocaleString("en-US");
+  const pct = (a, b) => (b ? Math.round(a / b * 100) : 0);
+  const lab = (list, k) => { const o = (LS[list] || []).find((x) => x[0] === k); return o ? o[lang === "ar" ? 1 : 2] : (k || "—"); };
+  const secName = (s) => (SEC[s] ? SEC[s][lang] : s);
+  const Q = (d) => DATA.days[d].questions;
+  const L = (q) => (q[lang] && q[lang].question ? q[lang] : q.ar);
+  const key = (k) => (lang === "ar" ? AR[LET.indexOf(k)] : k);
+  const color = (p) => (p >= 75 ? "var(--green)" : p >= 50 ? "var(--yellow)" : "var(--red)");
+
+  // pixel engineer logo
+  (function () {
+    const P = window.PIXEL_ENGINEER, px = 2, sh = [];
+    P.rows.forEach((r, y) => r.split("").forEach((ch, x) => { if (P.palette[ch]) sh.push(x * px + "px " + y * px + "px 0 " + P.palette[ch]); }));
+    document.getElementById("logo").innerHTML = '<span style="display:inline-block;width:2px;height:2px;box-shadow:' + sh.join(",") + ';margin-right:26px;margin-bottom:30px;direction:ltr"></span>';
+  })();
+
+  // ---------- data ----------
+  function compute(d) {
+    const qs = Q(d), byId = {};
+    qs.forEach((q) => { byId[q.id] = q; });
+    const board = ((db["day" + d] || {}).board) || {};
+    const ans = ((db.answers || {})["day" + d]) || {};
+    const trainees = db.trainees || {};
+    const players = Object.keys(board).map((id) => Object.assign({ id }, trainees[id] || {}, board[id]));
+    const recs = [];
+    Object.keys(ans).forEach((u) => Object.keys(ans[u]).forEach((qid) => { if (byId[qid]) recs.push(Object.assign({ u, qid }, ans[u][qid])); }));
+    const items = {};
+    qs.forEach((q) => { items[q.id] = { q, n: 0, c: 0, ms: 0, picks: { A: 0, B: 0, C: 0, D: 0, "": 0 } }; });
+    recs.forEach((r) => { const it = items[r.qid]; it.n++; it.c += r.correct ? 1 : 0; it.ms += r.ms || 0; it.picks[r.chosen || ""]++; });
+    const secs = {};
+    qs.forEach((q) => { const s = q.section; secs[s] = secs[s] || { s, n: 0, c: 0, qn: 0 }; secs[s].qn++; const it = items[q.id]; secs[s].n += it.n; secs[s].c += it.c; });
+    const reached = {};
+    Object.keys(ans).forEach((u) => { reached[u] = Object.keys(ans[u]).length; });
+    return { qs, byId, players, recs, items, secs, ans, reached };
+  }
+
+  // ---------- render ----------
+  function render() {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+    document.title = t("title") + " | " + t("brand");
+    $("brandName").textContent = t("brand");
+    $("playBtn").textContent = t("play");
+    $("langBtn").textContent = t("langBtn");
+    $("heroTitle").textContent = t("title");
+    $("heroLead").textContent = t("lead");
+    $("liveDot").className = "dot" + (live ? " on" : "");
+    $("liveText").textContent = live === "err" ? t("offline") : live ? t("live") + " • " + t("updated") + " " + new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : t("connecting");
+    const days = Object.keys(DATA.days).sort();
+    if (!day) day = days.find((d) => ((db["day" + d] || {}).board)) ? days.filter((d) => ((db["day" + d] || {}).board)).pop() : days[0];
+    $("tabs").innerHTML = days.map((d) => {
+      const n = Object.keys(((db["day" + d] || {}).board) || {}).length;
+      return '<button class="tab' + (d === day ? " active" : "") + '" data-d="' + d + '">' + esc(t("day")) + " " + d + (n ? "<small>" + fmt(n) + "</small>" : "") + "</button>";
+    }).join("");
+    $("tabs").querySelectorAll(".tab").forEach((b) => b.onclick = () => { day = b.dataset.d; openIds.clear(); filt.sec = ""; render(); });
+
+    const S = compute(day);
+    const M = $("main");
+    if (!S.players.length) {
+      M.innerHTML = '<div class="card"><div class="empty">📭 ' + esc(t("noData")) + "</div></div>";
+      return;
+    }
+    const total = S.qs.length;
+    const fin = S.players.filter((p) => p.finished).length;
+    const active = S.players.filter((p) => (p.answered || 0) >= 10);
+    const avgAcc = active.length ? Math.round(active.reduce((s, p) => s + p.correct / p.answered, 0) / active.length * 100) : 0;
+    const avgT = S.recs.length ? (S.recs.reduce((s, r) => s + (r.ms || 0), 0) / S.recs.length / 1000).toFixed(1) : "0";
+    const topScore = Math.max(...S.players.map((p) => p.score || 0));
+    const sorted = S.players.slice().sort((a, b) => (b.score || 0) - (a.score || 0) || (b.correct || 0) - (a.correct || 0));
+
+    let h = "";
+    // KPIs
+    const kpi = (icon, bg, label, value, hint) => '<div class="card kpi"><span class="icon" style="background:' + bg + '">' + icon + '</span><div class="label">' + esc(label) + '</div><div class="value">' + value + '</div><div class="hint">' + (hint || "&nbsp;") + "</div></div>";
+    h += '<div class="grid kpis">' +
+      kpi("👥", "var(--purple-soft)", t("players"), fmt(S.players.length)) +
+      kpi("🏁", "var(--green-soft)", t("finished"), fmt(fin), pct(fin, S.players.length) + "%") +
+      kpi("🎯", "var(--yellow-soft)", t("accuracy"), avgAcc + "%") +
+      kpi("✍️", "var(--purple-soft)", t("answers"), fmt(S.recs.length)) +
+      kpi("⏱️", "var(--green-soft)", t("avgTime"), avgT + " " + t("sec")) +
+      kpi("🏆", "var(--yellow-soft)", t("top"), fmt(topScore)) + "</div>";
+
+    // My performance
+    const me = myId && S.players.find((p) => p.id === myId);
+    if (me) {
+      const myAns = S.ans[myId] || {};
+      const rank = sorted.findIndex((p) => p.id === myId) + 1;
+      const myAcc = pct(me.correct || 0, me.answered || 0);
+      const rows = Object.values(S.secs).filter((s) => s.n).map((s) => {
+        const mine = S.qs.filter((q) => q.section === s.s && myAns[q.id]);
+        const mc = mine.filter((q) => myAns[q.id].correct).length;
+        return { s: s.s, g: pct(s.c, s.n), m: mine.length ? pct(mc, mine.length) : null, mn: mine.length };
+      });
+      const weak = rows.filter((r) => r.m !== null && r.mn >= 2).sort((a, b) => a.m - b.m).slice(0, 3);
+      h += '<div class="card me-card section-gap"><h2>👷 ' + esc(t("me")) + " — " + esc(me.name) + '</h2><div class="sub">' + esc(t("meSub")) + "</div>" +
+        '<div class="me-grid">' +
+        '<div class="me-stat"><div class="v">#' + rank + '</div><div class="l">' + esc(t("rank")) + " " + esc(f(t("ofTotal"), { n: S.players.length })) + "</div></div>" +
+        '<div class="me-stat"><div class="v">' + fmt(me.score) + '</div><div class="l">' + esc(t("score")) + "</div></div>" +
+        '<div class="me-stat"><div class="v">' + myAcc + '%</div><div class="l">' + esc(t("myAcc")) + " • " + esc(t("group")) + " " + avgAcc + "%</div></div>" +
+        '<div class="me-stat"><div class="v">' + (me.answered || 0) + "/" + total + '</div><div class="l">' + esc(t("answered")) + "</div></div></div>" +
+        '<div class="vs">' + rows.filter((r) => r.m !== null).map((r) =>
+          '<div class="name" style="font-weight:600">' + esc(r.s) + " · " + esc(secName(r.s)) + '</div><div class="pair">' +
+          '<div class="track"><div class="fill" style="width:' + r.m + "%;background:" + color(r.m) + '"></div></div>' +
+          '<div class="track"><div class="fill" style="width:' + r.g + '%;background:#c3c9d8"></div></div></div>').join("") + "</div>" +
+        (weak.length ? '<div class="sub" style="margin:14px 0 6px">📌 ' + esc(t("weak")) + '</div><div class="meta-row">' + weak.map((w) => '<span class="pill sec" data-sec="' + esc(w.s) + '">' + esc(w.s) + " · " + esc(secName(w.s)) + " — " + w.m + "%</span>").join("") + "</div>" : "") +
+        '<div class="meta-row" style="margin-top:10px"><span style="display:inline-block;width:14px;height:6px;border-radius:4px;background:var(--green)"></span>' + esc(t("you")) + ' <span style="display:inline-block;width:14px;height:6px;border-radius:4px;background:#c3c9d8;margin-inline-start:8px"></span>' + esc(t("group")) + "</div></div>";
+    }
+
+    // insights + leaderboard
+    h += '<div class="grid two section-gap"><div class="card"><h2>💡 ' + esc(t("insights")) + '</h2><div class="sub"></div><div class="grid" style="gap:10px">' + insights(S, sorted) + "</div></div>";
+    h += '<div class="card"><h2>🏆 ' + esc(t("board")) + '</h2><div class="sub">' + esc(t("boardSub")) + '</div><div class="lb">' +
+      sorted.slice(0, 10).map((p, i) => '<div class="lb-row' + (p.id === myId ? " me" : "") + '"><span class="r">' + (["🥇", "🥈", "🥉"][i] || i + 1) + '</span><span class="n"><b>' + esc(p.name) + "</b><span>" + esc(lab("disciplines", p.spec)) + " · " + esc(lab("cities", p.city)) + " · " + pct(p.correct || 0, p.answered || 0) + "% · " + Math.min(p.answered || 0, total) + "/" + total + (p.finished ? " 🏁" : "") + '</span></span><span class="s">' + fmt(p.score) + "</span></div>").join("") + "</div></div></div>";
+
+    // section mastery
+    const secList = Object.values(S.secs);
+    h += '<div class="card section-gap"><h2>📘 ' + esc(t("mastery")) + '</h2><div class="sub">' + esc(t("masterySub")) + '</div><div class="sec-grid">' +
+      secList.map((s) => {
+        const p = pct(s.c, s.n);
+        return '<div class="sec-tile" data-sec="' + esc(s.s) + '"><div class="code">' + esc(t("section")) + " " + esc(s.s) + '</div><div class="t">' + esc(secName(s.s)) + '</div><div class="p" style="color:' + (s.n ? color(p) : "var(--muted)") + '">' + (s.n ? p + "%" : "—") + '</div><div class="track" style="margin:6px 0"><div class="fill" style="width:' + p + "%;background:" + color(p) + '"></div></div><div class="meta">' + s.qn + " " + (lang === "ar" ? "سؤال" : "questions") + " · " + fmt(s.n) + " " + esc(t("n")) + "</div></div>";
+      }).join("") + "</div></div>";
+
+    // funnel + distribution
+    h += '<div class="grid two-eq section-gap"><div class="card"><h2>📉 ' + esc(t("funnel")) + '</h2><div class="sub">' + esc(t("funnelSub")) + "</div>" + funnelSvg(S) + "</div>";
+    h += '<div class="card"><h2>📊 ' + esc(t("dist")) + '</h2><div class="sub">' + esc(t("distSub")) + "</div>" + histSvg(S.players.map((p) => p.score || 0)) + "</div></div>";
+
+    // levels + speed
+    const lvl = ["easy", "medium", "hard"].map((lv) => { const rs = S.recs.filter((r) => r.level === lv); return { lv, n: rs.length, p: pct(rs.filter((r) => r.correct).length, rs.length) }; });
+    const bands = [[0, 5], [5, 10], [10, 15], [15, 20], [20, 31]].map(([a, b]) => { const rs = S.recs.filter((r) => r.ms / 1000 >= a && r.ms / 1000 < b); return { l: a + "–" + (b > 30 ? 30 : b) + " " + t("sec"), n: rs.length, p: pct(rs.filter((r) => r.correct).length, rs.length) }; });
+    h += '<div class="grid two-eq section-gap"><div class="card"><h2>🧩 ' + esc(t("levels")) + '</h2><div class="sub">&nbsp;</div><div class="bars">' +
+      lvl.map((x) => bar(t(x.lv), x.p, x.p + "%", color(x.p), fmt(x.n) + " " + t("n"))).join("") + "</div></div>" +
+      '<div class="card"><h2>⚡ ' + esc(t("speed")) + '</h2><div class="sub">' + esc(t("speedSub")) + '</div><div class="bars">' +
+      bands.map((x) => bar(x.l, x.p, x.p + "%", "var(--blue)", fmt(x.n) + " " + t("n"))).join("") + "</div></div></div>";
+
+    // traps
+    const traps = Object.values(S.items).filter((it) => it.n >= 5).sort((a, b) => a.c / a.n - b.c / b.n).slice(0, 6);
+    h += '<div class="card section-gap"><h2>🪤 ' + esc(t("traps")) + '</h2><div class="sub">' + esc(t("trapsSub")) + '</div><div class="grid two-eq">' + traps.map(qDetail).join("") + "</div></div>";
+
+    // explorer
+    h += '<div class="card section-gap" id="explorer"><h2>🔎 ' + esc(t("explorer")) + '</h2><div class="sub">' + esc(t("explorerSub")) + "</div>" +
+      '<div class="filters"><input id="fq" placeholder="' + esc(t("search")) + '" value="' + esc(filt.q) + '">' +
+      '<select id="fs"><option value="">' + esc(t("allSec")) + "</option>" + secList.map((s) => '<option value="' + esc(s.s) + '"' + (filt.sec === s.s ? " selected" : "") + ">" + esc(s.s) + " · " + esc(secName(s.s)) + "</option>").join("") + "</select>" +
+      '<select id="fl"><option value="">' + esc(t("allLvl")) + "</option>" + ["easy", "medium", "hard"].map((l) => '<option value="' + l + '"' + (filt.lvl === l ? " selected" : "") + ">" + esc(t(l)) + "</option>").join("") + "</select>" +
+      '<select id="fo">' + [["hard", "sortHard"], ["easy", "sortEasy"], ["id", "sortId"]].map(([v, k]) => '<option value="' + v + '"' + (filt.sort === v ? " selected" : "") + ">" + esc(t(k)) + "</option>").join("") + "</select></div>" +
+      '<div class="qlist" id="qlist"></div></div>';
+
+    // who
+    const groupBars = (keyName, list) => {
+      const c = {};
+      S.players.forEach((p) => { const k = lab(list, p[keyName]); c[k] = (c[k] || 0) + 1; });
+      const arr = Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, 8), mx = arr.length ? arr[0][1] : 1;
+      return '<div class="bars">' + arr.map(([k, v]) => bar(k, v / mx * 100, fmt(v), "var(--purple)")).join("") + "</div>";
+    };
+    h += '<div class="section-gap"><h2 style="font-size:1.05rem;font-weight:800;margin:6px 4px 12px">🌍 ' + esc(t("who")) + '</h2><div class="grid three">' +
+      '<div class="card"><h2>' + esc(t("disc")) + "</h2>" + groupBars("spec", "disciplines") + "</div>" +
+      '<div class="card"><h2>' + esc(t("city")) + "</h2>" + groupBars("city", "cities") + "</div>" +
+      '<div class="card"><h2>' + esc(t("nat")) + "</h2>" + groupBars("nationality", "nationalities") + "</div></div></div>";
+    h += '<div class="foot">' + esc(t("foot")) + "</div>";
+    M.innerHTML = h;
+
+    const goSec = (s) => { filt.sec = s; filt.sort = "hard"; $("fs").value = s; drawList(S); $("explorer").scrollIntoView({ behavior: "smooth", block: "start" }); };
+    M.querySelectorAll("[data-sec]").forEach((el) => el.onclick = () => goSec(el.dataset.sec));
+    $("fq").oninput = (e) => { filt.q = e.target.value; drawList(S); };
+    $("fs").onchange = (e) => { filt.sec = e.target.value; drawList(S); };
+    $("fl").onchange = (e) => { filt.lvl = e.target.value; drawList(S); };
+    $("fo").onchange = (e) => { filt.sort = e.target.value; drawList(S); };
+    drawList(S);
+  }
+
+  function bar(name, w, num, col, sub) {
+    return '<div class="bar-row"><span class="name" title="' + esc(name) + '">' + esc(name) + (sub ? ' <span style="color:var(--muted);font-weight:500;font-size:.75rem">· ' + esc(sub) + "</span>" : "") +
+      '</span><div class="track"><div class="fill" style="width:' + Math.max(2, w) + "%;background:" + col + '"></div></div><span class="num">' + esc(num) + "</span></div>";
+  }
+
+  function qDetail(it) {
+    const q = it.q, x = L(q), p = pct(it.c, it.n);
+    const wrongs = LET.filter((k) => k !== q.answer).sort((a, b) => it.picks[b] - it.picks[a]);
+    const trap = it.picks[wrongs[0]] > 0 ? wrongs[0] : null;
+    return '<div class="trap"><div class="meta-row"><b style="color:var(--ink)">' + esc(q.id) + '</b><span class="pill ' + q.level + '">' + esc(t(q.level)) + '</span><span class="pill sec" data-sec="' + esc(q.section) + '">📘 ' + esc(q.section) + " · " + esc(secName(q.section)) + "</span><span>" + (it.n ? p + "% " + esc(t("correct")) + " · " + fmt(it.n) + " " + esc(t("n")) : esc(t("notReached"))) + "</span></div>" +
+      '<div class="q">' + esc(x.question) + '</div><div class="opts">' +
+      LET.map((k, i) => {
+        const pp = pct(it.picks[k], it.n);
+        return '<div class="opt' + (k === q.answer ? " correct" : k === trap ? " trapped" : "") + '"><span class="k">' + key(k) + '</span><div class="ob"><i style="width:' + pp + '%"></i><span>' + esc(x.options[k]) + '</span></div><span class="pc">' + (it.n ? pp + "%" : "") + "</span></div>";
+      }).join("") + '</div><div class="why">💡 ' + esc(x.reason) + "</div></div>";
+  }
+
+  function drawList(S) {
+    let list = Object.values(S.items);
+    const q = filt.q.trim().toLowerCase();
+    if (q) list = list.filter((it) => (it.q.ar.question + " " + ((it.q.en || {}).question || "") + " " + it.q.id).toLowerCase().includes(q));
+    if (filt.sec) list = list.filter((it) => it.q.section === filt.sec);
+    if (filt.lvl) list = list.filter((it) => it.q.level === filt.lvl);
+    const r = (it) => (it.n ? it.c / it.n : 2);
+    if (filt.sort === "hard") list.sort((a, b) => r(a) - r(b));
+    else if (filt.sort === "easy") list.sort((a, b) => r(b) - r(a));
+    const filtered = !!(q || filt.sec || filt.lvl);
+    const more = !filtered && !showAll && list.length > 15 ? list.length - 15 : 0;
+    if (more) list = list.slice(0, 15);
+    $("qlist").innerHTML = list.map((it) => {
+      const p = pct(it.c, it.n);
+      return '<div class="qrow' + (openIds.has(it.q.id) ? " open" : "") + '" data-id="' + it.q.id + '"><div class="qhead"><span class="id">' + esc(it.q.id) + '</span><span class="txt">' + esc(L(it.q).question) +
+        '</span><span class="lv"><span class="pill ' + it.q.level + '">' + esc(t(it.q.level)) + '</span></span><span class="pct" style="color:' + (it.n ? color(p) : "var(--muted)") + '">' + (it.n ? p + "%" : "—") + "</span></div>" +
+        '<div class="qbody">' + (openIds.has(it.q.id) ? qDetail(it) : "") + "</div></div>";
+    }).join("") + (more ? '<button class="tab" id="moreBtn" style="background:var(--purple-soft);color:var(--purple);justify-self:center;margin-top:6px">' + (lang === "ar" ? "عرض كل الأسئلة (" + (more + 15) + ")" : "Show all questions (" + (more + 15) + ")") + "</button>" : "") || '<div class="empty">—</div>';
+    if (more) $("moreBtn").onclick = () => { showAll = true; drawList(S); };
+    $("qlist").querySelectorAll(".qhead").forEach((hd) => hd.onclick = () => {
+      const id = hd.parentNode.dataset.id;
+      openIds.has(id) ? openIds.delete(id) : openIds.add(id);
+      drawList(S);
+      $("qlist").querySelectorAll("[data-sec]").forEach((el) => el.onclick = () => { filt.sec = el.dataset.sec; $("fs").value = filt.sec; drawList(S); });
+    });
+  }
+
+  function insights(S, sorted) {
+    const out = [];
+    const secs = Object.values(S.secs).filter((s) => s.n >= 10).sort((a, b) => a.c / a.n - b.c / b.n);
+    if (secs.length) out.push(["📘", f(t("i_hardSec"), { s: secs[0].s + " · " + secName(secs[0].s), p: pct(secs[0].c, secs[0].n) })]);
+    const tr = Object.values(S.items).filter((it) => it.n >= 8).map((it) => {
+      const w = LET.filter((k) => k !== it.q.answer).sort((a, b) => it.picks[b] - it.picks[a])[0];
+      return { it, w, share: it.picks[w] / it.n };
+    }).sort((a, b) => b.share - a.share)[0];
+    if (tr) { const x = L(tr.it.q); out.push(["🪤", f(t("i_trap"), { q: x.question.length > 70 ? x.question.slice(0, 70) + "…" : x.question, p: Math.round(tr.share * 100), o: x.options[tr.w] })]); }
+    const fast = S.recs.filter((r) => r.ms <= 5000), slow = S.recs.filter((r) => r.ms > 15000);
+    if (fast.length > 20 && slow.length > 20) out.push(["⚡", f(t("i_speed"), { a: pct(fast.filter((r) => r.correct).length, fast.length), b: pct(slow.filter((r) => r.correct).length, slow.length) })]);
+    const reach = Object.values(S.reached);
+    if (reach.length) {
+      const marks = [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].filter((m) => m <= S.qs.length);
+      const cnt = marks.map((m) => reach.filter((r) => r >= m).length);
+      let bi = 1, bd = -1;
+      for (let i = 1; i < cnt.length; i++) if (cnt[i - 1] - cnt[i] > bd) { bd = cnt[i - 1] - cnt[i]; bi = i; }
+      out.push(["📉", f(t("i_drop"), { s: fmt(S.players.length), f: fmt(S.players.filter((p) => p.finished).length), q: marks[bi] })]);
+    }
+    const best = S.players.filter((p) => (p.answered || 0) >= 50).sort((a, b) => b.correct / b.answered - a.correct / a.answered)[0];
+    if (best) out.push(["🎯", f(t("i_best"), { n: best.name, p: pct(best.correct, best.answered) })]);
+    return out.map(([ic, txt]) => '<div class="insight"><span class="ic">' + ic + "</span><span>" + esc(txt) + "</span></div>").join("");
+  }
+
+  function funnelSvg(S) {
+    const n = S.qs.length, reach = Object.values(S.reached), W = 560, H = 220, pad = 34;
+    const pts = [];
+    for (let i = 1; i <= n; i++) pts.push(reach.filter((r) => r >= i).length);
+    const mx = Math.max(1, ...pts);
+    const x = (i) => pad + (i / (n - 1)) * (W - pad - 10), y = (v) => H - pad + 6 - (v / mx) * (H - pad - 20);
+    const line = pts.map((v, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1)).join(" ");
+    const area = line + " L" + x(n - 1) + " " + y(0) + " L" + x(0) + " " + y(0) + " Z";
+    const lvls = { easy: 0, medium: 0 }; S.qs.forEach((q, i) => { if (q.level === "easy") lvls.easy = i; if (q.level === "medium") lvls.medium = i; });
+    const grid = [0, 0.5, 1].map((g) => { const v = Math.round(mx * g); return '<line x1="' + pad + '" x2="' + (W - 10) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#eef1f7"/><text x="' + (pad - 6) + '" y="' + (y(v) + 4) + '" font-size="11" fill="#66708a" text-anchor="end">' + v + "</text>"; }).join("");
+    const sep = [lvls.easy, lvls.medium].map((i) => '<line x1="' + x(i + 0.5) + '" x2="' + x(i + 0.5) + '" y1="14" y2="' + y(0) + '" stroke="#d6dbe8" stroke-dasharray="4 4"/>').join("");
+    const lblX = [[0, lvls.easy, "easy"], [lvls.easy, lvls.medium, "medium"], [lvls.medium, n - 1, "hard"]].map(([a, b, l]) => '<text x="' + x((a + b) / 2) + '" y="12" font-size="11" fill="#66708a" text-anchor="middle">' + esc(t(l)) + "</text>").join("");
+    return '<svg viewBox="0 0 ' + W + " " + H + '" width="100%" role="img" style="direction:ltr"><defs><linearGradient id="ga" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#7c5cbf" stop-opacity=".35"/><stop offset="1" stop-color="#7c5cbf" stop-opacity="0"/></linearGradient></defs>' +
+      grid + sep + lblX + '<path d="' + area + '" fill="url(#ga)"/><path d="' + line + '" fill="none" stroke="#7c5cbf" stroke-width="2.5" stroke-linejoin="round"/>' +
+      [1, Math.round(n / 2), n].map((i) => '<text x="' + x(i - 1) + '" y="' + (H - 8) + '" font-size="11" fill="#66708a" text-anchor="middle">' + i + "</text>").join("") + "</svg>";
+  }
+
+  function histSvg(vals) {
+    const W = 560, H = 220, pad = 34, mx = Math.max(1, ...vals), nb = 8, step = Math.ceil(mx / nb / 1000) * 1000 || 1000;
+    const b = Array(nb).fill(0);
+    vals.forEach((v) => { b[Math.min(nb - 1, Math.floor(v / step))]++; });
+    const top = Math.max(1, ...b), bw = (W - pad - 10) / nb;
+    const k = (v) => (v >= 1000 ? Math.round(v / 1000) + "k" : v);
+    return '<svg viewBox="0 0 ' + W + " " + H + '" width="100%" role="img" style="direction:ltr">' +
+      b.map((v, i) => {
+        const hh = (v / top) * (H - pad - 26), xx = pad + i * bw + 4, yy = H - pad - hh;
+        return '<rect x="' + xx + '" y="' + yy + '" width="' + (bw - 8) + '" height="' + hh + '" rx="8" fill="' + (i >= nb - 2 ? "#ffc83d" : "#2fbf4f") + '" opacity="' + (0.55 + 0.45 * (i / nb)) + '"/>' +
+          (v ? '<text x="' + (xx + (bw - 8) / 2) + '" y="' + (yy - 6) + '" font-size="12" font-weight="700" fill="#14213d" text-anchor="middle">' + v + "</text>" : "") +
+          '<text x="' + (xx + (bw - 8) / 2) + '" y="' + (H - pad + 16) + '" font-size="10.5" fill="#66708a" text-anchor="middle">' + k(i * step) + "–" + k((i + 1) * step) + "</text>";
+      }).join("") + "</svg>";
+  }
+
+  function $(id) { return document.getElementById(id); }
+
+  // ---------- live data ----------
+  $("langBtn").onclick = () => { lang = lang === "ar" ? "en" : "ar"; try { localStorage.setItem("gbq2:lang", JSON.stringify(lang)); } catch (e) {} render(); };
+  // redraw on new data, but never while the trainee is typing or choosing a filter
+  let pending = null;
+  function schedule() {
+    clearTimeout(pending);
+    pending = setTimeout(() => {
+      const a = document.activeElement;
+      if (a && /INPUT|SELECT/.test(a.tagName)) return schedule();
+      const y = window.scrollY;
+      render();
+      window.scrollTo(0, y);
+    }, 400);
+  }
+  render();
+  if (window.GB_TEST_DATA) { db = window.GB_TEST_DATA; live = true; render(); return; }
+  try {
+    firebase.initializeApp(CFG.firebase);
+    firebase.database().ref(ROOT).on("value", (s) => { db = s.val() || {}; live = true; schedule(); }, () => { live = "err"; render(); });
+  } catch (e) { live = "err"; render(); }
+})();
+</script>
+</body>
+</html>

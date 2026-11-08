@@ -72,6 +72,21 @@ This checks every question (missing fields, bad level or answer letter, duplicat
 
 To add a Day 4, add `questions/day4.ar.md` and a title for day 4 in `DAYS` inside `tools/build_questions.py`.
 
+## Analytics page (for trainees)
+
+`analytics.html` (e.g. `https://khalecl.github.io/ghg/analytics.html`, also the 📊 button in the quiz) shows each day separately, live from Firebase:
+
+- KPIs: players, finishers, average accuracy, answers, average time, top score
+- **Your performance** (when opened on the trainee's own device): rank, score, accuracy vs the group, per-section bars and the sections to review first
+- Key insights written from the data (weakest section, biggest trap, speed vs accuracy, where people dropped off)
+- Leaderboard, progress funnel, score distribution, accuracy by level and by answer time
+- **Manual section mastery**: % correct per section of the trainee manual; tap a section to see its questions
+- **Questions that caught most of us**: each with the share that picked every option, the correct answer and the reason
+- Searchable list of all questions, filter by section and level
+- Who's playing: discipline, city, nationality
+
+No emails or phone numbers are shown. Section titles are in `sections.js`.
+
 ## Results for analysis
 
 Open `results.html` (same site, e.g. `https://khalecl.github.io/ghg/results.html`). It shows counts by day, discipline, city and nationality, the hardest questions, and three CSV downloads:
