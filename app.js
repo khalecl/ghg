@@ -117,6 +117,33 @@
     fanfare() { [523, 659, 784, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.13, 0.2, "square", 0.08)); }
   };
 
+  // ---------------- background music (original loop, Web Audio only) ----------------
+  // [frequency, beats]; 0 = rest
+  const MELODY = [
+    [523,.5],[659,.5],[784,.5],[659,.5],[698,1],[0,.5],[587,.5],
+    [523,.5],[587,.5],[659,.5],[523,.5],[440,1],[0,1],
+    [392,.5],[523,.5],[659,.5],[784,.5],[880,.75],[784,.25],[698,.5],[659,.5],
+    [587,.5],[659,.5],[698,.5],[587,.5],[523,1.5],[0,.5],
+    [659,.5],[698,.5],[784,1],[880,.5],[784,.5],[659,1],
+    [587,.5],[523,.5],[587,.5],[659,.5],[587,1],[0,1],
+    [523,.5],[659,.5],[784,.5],[1047,.5],[988,.5],[784,.5],[659,.5],[587,.5],
+    [523,1.5],[0,1.5]
+  ];
+  const BASS = [[131,2],[175,2],[147,2],[110,2],[131,2],[175,2],[196,2],[131,2],[165,2],[196,2],[147,2],[196,2],[131,2],[196,2],[131,3]];
+  const BEAT = 0.3;
+  let musicOn = false, musicTimer = null;
+  const musicLabel = () => (lang === "ar" ? "🎵 الموسيقى: " + (musicOn ? "تشغيل" : "إيقاف") : "🎵 Music: " + (musicOn ? "ON" : "OFF"));
+  function playLoop() {
+    if (!musicOn) return;
+    let tm = 0;
+    MELODY.forEach(([f, b]) => { if (f) tone(f, tm, BEAT * b * 0.9, "square", 0.04); tm += BEAT * b; });
+    let bt = 0;
+    BASS.forEach(([f, b]) => { if (f) tone(f, bt, BEAT * b * 0.9, "triangle", 0.06); bt += BEAT * b; });
+    musicTimer = setTimeout(playLoop, Math.max(tm, bt) * 1000);
+  }
+  function startMusic() { if (musicOn) return; musicOn = true; playLoop(); }
+  function stopMusic() { musicOn = false; clearTimeout(musicTimer); }
+
   // ---------------- Firebase ----------------
   let db = null, boardRef = null, boardData = {}, lastRank = null, sync = "connecting";
   const root = CFG.rootPath || "gbquiz";
@@ -226,7 +253,7 @@
     document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
     document.title = t("title");
     $("langBtn").textContent = t("langBtn");
-    $("soundBtn").textContent = soundOn ? "🔊" : "🔇";
+    $("musicBtn").textContent = musicLabel();
     $("logoutBtn").textContent = t("logout");
     $("logoutBtn").classList.toggle("hidden", !me());
     render(true);
@@ -244,7 +271,7 @@
   function renderLogin(c) {
     const p = (me() && me().profile) || {};
     c.innerHTML =
-      '<div class="mascot">🏡</div><h1>' + esc(t("title")) + '</h1><p class="subtitle">' + esc(t("sub")) + "</p>" +
+      '<div class="mario-buddy">🏡</div><h1>' + esc(t("title")) + '</h1><p class="subtitle">' + esc(t("sub")) + "</p>" +
       '<form id="f">' +
       '<input name="name" required maxlength="60" placeholder="' + esc(t("name")) + '" value="' + esc(p.name) + '">' +
       '<input name="email" type="email" required maxlength="120" placeholder="' + esc(t("email")) + '" value="' + esc(p.email) + '">' +
@@ -279,12 +306,12 @@
     if (st && st.finished) label = t("replay");
     else if (st && st.index > 0) label = t("resume") + " " + (st.index + 1);
     c.innerHTML =
-      '<div class="mascot">🌱</div><h1>' + esc(t("hello")) + " " + esc(u.profile.name) + "!</h1>" +
+      '<div class="mario-buddy">👷</div><h1>' + esc(t("hello")) + " " + esc(u.profile.name) + "!</h1>" +
       '<p class="subtitle">' + esc(t("pickDay")) + "</p>" +
       '<div class="days">' + days().map((d) => {
         const s = u.days[d];
         const status = s && s.finished ? "✅ " + s.score : s && s.index ? s.index + "/" + qs(d).length : t("notStarted");
-        return '<button type="button" class="day-btn' + (d === selectedDay ? " active" : "") + '" data-d="' + d + '"><span class="num">' + esc(t("day")) + " " + d + '</span><span class="st">' + esc(status) + "</span></button>";
+        return '<button type="button" class="answer-btn day-btn' + (d === selectedDay ? " active" : "") + '" data-d="' + d + '"><span class="num">' + esc(t("day")) + " " + d + '</span><span class="st">' + esc(status) + "</span></button>";
       }).join("") + "</div>" +
       '<div class="day-title">' + esc(DATA.days[selectedDay].title[lang]) + " • " + total + " " + esc(t("q")) + "</div>" +
       '<p class="hint" style="margin-top:.4rem">' + esc(t("rules")) + "</p>" +
@@ -317,11 +344,11 @@
     const txt = L(q, lang);
     const mult = multiplier(st.streak);
     c.innerHTML =
-      '<div class="hud"><span>' + esc(t("q")) + " " + (st.index + 1) + "/" + list.length + ' <span class="level-tag level-' + q.level + '">' + esc(t(q.level)) + "</span></span>" +
-      '<span class="combo-chip' + (st.streak >= 2 ? " hot" : "") + '">×' + (+mult.toFixed(2)) + "</span>" +
-      '<span class="coins" id="coins">🪙 ' + st.score + "</span></div>" +
-      '<div class="track"><div class="fill" style="width:' + (st.index / list.length * 100) + '%"></div></div>' +
-      '<div class="timer" id="timer"><div id="timerFill"></div></div>' +
+      '<div class="hud"><span>' + esc(t("q")) + " " + (st.index + 1) + "/" + list.length + ' <span class="lvl lvl-' + q.level + '">' + esc(t(q.level)) + "</span></span>" +
+      '<span class="combo' + (st.streak >= 2 ? " hot" : "") + '">×' + (+mult.toFixed(2)) + "</span>" +
+      '<span class="coin-counter" id="coins">🪙 ' + st.score + "</span></div>" +
+      '<div class="progress-track"><div class="progress-fill" style="width:' + (st.index / list.length * 100) + '%"></div></div>' +
+      '<div class="timer-track" id="timer"><div class="timer-fill" id="timerFill"></div></div>' +
       '<div class="question">' + esc(txt.question) + "</div>" +
       '<div class="answers">' + LETTERS.map((k, i) =>
         '<button class="answer-btn" type="button" data-k="' + k + '"><span class="k">' + (lang === "ar" ? AR_KEYS[i] : k) + "</span><span>" + esc(txt.options[k]) + "</span></button>").join("") + "</div>" +
@@ -458,11 +485,11 @@
       '<div class="actions"><button class="big-btn" id="homeBtn" type="button">' + esc(t("home")) + "</button>" +
       '<button class="big-btn ghost" id="revBtn" type="button">' + esc(t("review")) + "</button>" +
       '<button class="big-btn ghost" id="againBtn" type="button">' + esc(t("again")) + "</button></div>" +
-      (reviewOpen ? '<div class="review">' + (wrong.length ? wrong.map((a) => {
+      (reviewOpen ? '<div class="breakdown">' + (wrong.length ? wrong.map((a) => {
         const q = byId[a.id], x = L(q, lang);
-        return '<div class="review-item"><b>' + esc(x.question) + '</b><div class="no">' + esc(t("yours")) + esc(a.chosen ? x.options[a.chosen] : t("none")) +
+        return '<div class="breakdown-item"><b>' + esc(x.question) + '</b><div class="no">' + esc(t("yours")) + esc(a.chosen ? x.options[a.chosen] : t("none")) +
           '</div><div class="ok">' + esc(t("correctIs")) + esc(x.options[q.answer]) + "</div><div>💡 " + esc(x.reason) + "</div></div>";
-      }).join("") : '<div class="review-item">' + esc(t("noMistakes")) + "</div>") + "</div>" : "");
+      }).join("") : '<div class="breakdown-item">' + esc(t("noMistakes")) + "</div>") + "</div>" : "");
     $("homeBtn").onclick = () => { screen = "home"; render(); };
     $("revBtn").onclick = () => { reviewOpen = !reviewOpen; render(); };
     $("againBtn").onclick = () => {
@@ -499,7 +526,7 @@
 
   // ---------------- controls ----------------
   $("langBtn").onclick = () => { lang = lang === "ar" ? "en" : "ar"; save(KEY.lang, lang); SFX.tap(); applyLang(); };
-  $("soundBtn").onclick = () => { soundOn = !soundOn; save(KEY.sound, soundOn); $("soundBtn").textContent = soundOn ? "🔊" : "🔇"; SFX.tap(); };
+  $("musicBtn").onclick = () => { musicOn ? stopMusic() : startMusic(); $("musicBtn").textContent = musicLabel(); };
   $("logoutBtn").onclick = () => {
     clearInterval(timer); timer = null;
     uid = null; persist();

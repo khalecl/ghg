@@ -22,7 +22,7 @@ window.QUIZ_CONFIG = {
   // Points by question level (multiplies basePoints).
   levelWeight: { easy: 1, medium: 1.5, hard: 2 },
 
-  // Sound effects on by default (trainees can mute).
+  // Sound effects (correct, wrong, combo, timer ticks, fanfare). Background music starts OFF; trainees use the Music button.
   soundOn: true,
 
   // Live leaderboard and cross-device resume (Firebase Realtime Database).
