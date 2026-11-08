@@ -4,13 +4,13 @@ A bilingual (Arabic / English) quiz for the 3-day course **Green Buildings: Rene
 
 ## What trainees get
 
-- **Registration:** name, email, mobile, organization, discipline.
+- **Registration:** name, email, nationality, city, engineering discipline (Saudi list), mobile and organization (optional). Lists are in `lists.js`.
 - **Resume:** progress is saved on the device and in Firebase. The same email continues from the next question, even on another device.
 - **Days:** Day 1 is selected by default; Day 2 and Day 3 are one tap away.
 - **Arabic / English:** one button switches everything, including questions. The reason after each answer can be read in the other language.
 - **Scoring:** 30 s per question; base points × level weight (easy ×1, medium ×1.5, smart ×2) + speed bonus. Correct answers within 12 s build a combo (×0.25 each, up to ×3). Wrong, slow or timed-out answers break it.
 - **Live leaderboard:** always visible under the question, one tab per day, top 10 with medals, the trainee's own row highlighted, and "your rank #N of M".
-- **Fun bits:** coins, combo pop-ups, confetti, short sound effects (mute button at the top).
+- **Fun bits:** pixel engineer, coins, combo pop-ups, confetti. Sounds only for correct and wrong answers.
 - Keyboard: 1–4 or A–D to answer.
 
 All numbers are in `config.js`.
@@ -72,6 +72,16 @@ This checks every question (missing fields, bad level or answer letter, duplicat
 
 To add a Day 4, add `questions/day4.ar.md` and a title for day 4 in `DAYS` inside `tools/build_questions.py`.
 
+## Results for analysis
+
+Open `results.html` (same site, e.g. `https://khalecl.github.io/ghg/results.html`). It shows counts by day, discipline, city and nationality, the hardest questions, and three CSV downloads:
+
+- `gb_quiz_trainees.csv`: one row per trainee per day (score, accuracy, nationality, city, discipline…)
+- `gb_quiz_answers.csv`: every single answer
+- `gb_quiz_question_analysis.csv`: % correct, average time and option picks per question
+
+The CSVs open directly in Excel with Arabic intact.
+
 ## Leaderboard and database
 
 The quiz uses the same Firebase Realtime Database as the Env activities (`test-7f3ce`), under its own folder `gbquiz/`:
@@ -80,7 +90,8 @@ The quiz uses the same Firebase Realtime Database as the Env activities (`test-7
 |---|---|
 | `gbquiz/day{N}/board/{id}` | Leaderboard row: name, organization, discipline, score, answered, correct, best combo, finished |
 | `gbquiz/progress/{id}/day{N}` | Where the trainee stopped (for resume on another device) |
-| `gbquiz/trainees/{id}` | Name, organization, discipline, last seen |
+| `gbquiz/trainees/{id}` | Name, nationality, city, discipline, organization, last seen |
+| `gbquiz/answers/day{N}/{id}/{questionId}` | Each answer: option chosen, correct (1/0), time in ms, level |
 
 `{id}` is a code made from the email, so emails do not appear in the database. Email and mobile stay on the trainee's device unless `sendContactDetails` is set to `true` in `config.js`.
 

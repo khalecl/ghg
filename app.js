@@ -15,7 +15,7 @@
     ar: {
       title: "تحدي المباني الخضراء", sub: "أجب بسرعة وبدقة، واجمع العملات، وتصدّر القائمة!",
       name: "الاسم الكامل", email: "البريد الإلكتروني", phone: "الجوال (اختياري)", org: "جهة العمل (اختياري)",
-      spec: "التخصص", specs: { architecture: "معماري", mechanical: "ميكانيكي", electrical: "كهربائي", civil: "مدني / إنشائي", environmental: "بيئي", other: "أخرى" },
+      spec: "التخصص الهندسي", nat: "الجنسية", city: "المدينة",
       go: "هيا بنا!", hint: "استخدم البريد نفسه لتكمل من حيث توقفت.",
       hello: "أهلًا", pickDay: "اختر اليوم", day: "اليوم", start: "ابدأ", resume: "أكمل من السؤال", replay: "عرض النتيجة",
       notStarted: "لم يبدأ", done: "مكتمل", rules: "30 ثانية لكل سؤال • الأسرع يربح أكثر • 3 إجابات سريعة صحيحة = كومبو",
@@ -34,7 +34,7 @@
     en: {
       title: "Green Buildings Challenge", sub: "Answer fast and right, collect coins, and top the board!",
       name: "Full name", email: "Email", phone: "Mobile (optional)", org: "Organization (optional)",
-      spec: "Discipline", specs: { architecture: "Architectural", mechanical: "Mechanical", electrical: "Electrical", civil: "Civil / Structural", environmental: "Environmental", other: "Other" },
+      spec: "Engineering discipline", nat: "Nationality", city: "City",
       go: "Let's go!", hint: "Use the same email to continue where you stopped.",
       hello: "Hi", pickDay: "Pick a day", day: "Day", start: "Start", resume: "Continue from question", replay: "See result",
       notStarted: "Not started", done: "Done", rules: "30 s per question • faster = more points • 3 quick correct answers = combo",
@@ -107,42 +107,23 @@
     } catch (e) { /* audio unavailable */ }
   }
   const SFX = {
-    tap() { tone(660, 0, 0.06, "sine", 0.08); },
+    tap() {},
     right() { tone(784, 0, 0.09); tone(1175, 0.08, 0.28); },
     wrong() { tone(260, 0, 0.16, "sawtooth", 0.08); tone(196, 0.15, 0.3, "sawtooth", 0.08); },
-    combo() { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.07, 0.14, "square", 0.07)); },
-    tick() { tone(1200, 0, 0.04, "square", 0.05); },
-    start() { [440, 554, 659].forEach((f, i) => tone(f, i * 0.09, 0.13, "triangle")); },
-    rankUp() { tone(880, 0, 0.08, "sine"); tone(1320, 0.08, 0.16, "sine"); },
-    fanfare() { [523, 659, 784, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.13, 0.2, "square", 0.08)); }
+    // only correct / wrong make a sound
+    combo() {}, tick() {}, start() {}, rankUp() {}, fanfare() {}
   };
 
-  // ---------------- background music (original loop, Web Audio only) ----------------
-  // [frequency, beats]; 0 = rest
-  const MELODY = [
-    [523,.5],[659,.5],[784,.5],[659,.5],[698,1],[0,.5],[587,.5],
-    [523,.5],[587,.5],[659,.5],[523,.5],[440,1],[0,1],
-    [392,.5],[523,.5],[659,.5],[784,.5],[880,.75],[784,.25],[698,.5],[659,.5],
-    [587,.5],[659,.5],[698,.5],[587,.5],[523,1.5],[0,.5],
-    [659,.5],[698,.5],[784,1],[880,.5],[784,.5],[659,1],
-    [587,.5],[523,.5],[587,.5],[659,.5],[587,1],[0,1],
-    [523,.5],[659,.5],[784,.5],[1047,.5],[988,.5],[784,.5],[659,.5],[587,.5],
-    [523,1.5],[0,1.5]
-  ];
-  const BASS = [[131,2],[175,2],[147,2],[110,2],[131,2],[175,2],[196,2],[131,2],[165,2],[196,2],[147,2],[196,2],[131,2],[196,2],[131,3]];
-  const BEAT = 0.3;
-  let musicOn = false, musicTimer = null;
-  const musicLabel = () => (lang === "ar" ? "🎵 الموسيقى: " + (musicOn ? "تشغيل" : "إيقاف") : "🎵 Music: " + (musicOn ? "ON" : "OFF"));
-  function playLoop() {
-    if (!musicOn) return;
-    let tm = 0;
-    MELODY.forEach(([f, b]) => { if (f) tone(f, tm, BEAT * b * 0.9, "square", 0.04); tm += BEAT * b; });
-    let bt = 0;
-    BASS.forEach(([f, b]) => { if (f) tone(f, bt, BEAT * b * 0.9, "triangle", 0.06); bt += BEAT * b; });
-    musicTimer = setTimeout(playLoop, Math.max(tm, bt) * 1000);
+  // ---------------- pixel engineer ----------------
+  function pixelEngineer(scale) {
+    const P = window.PIXEL_ENGINEER, px = P.size * (scale || 1), shadows = [];
+    P.rows.forEach((row, y) => row.split("").forEach((ch, x) => {
+      if (P.palette[ch]) shadows.push((x * px) + "px " + (y * px) + "px 0 " + P.palette[ch]);
+    }));
+    return '<span class="pixel-eng" style="width:' + px + "px;height:" + px + "px;box-shadow:" + shadows.join(",") +
+      ";margin-right:" + (P.rows[0].length - 1) * px + "px;margin-bottom:" + (P.rows.length - 1) * px + 'px"></span>';
   }
-  function startMusic() { if (musicOn) return; musicOn = true; playLoop(); }
-  function stopMusic() { musicOn = false; clearTimeout(musicTimer); }
+  document.querySelectorAll(".runner span").forEach((el) => { el.innerHTML = pixelEngineer(1); });
 
   // ---------------- Firebase ----------------
   let db = null, boardRef = null, boardData = {}, lastRank = null, sync = "connecting";
@@ -173,6 +154,7 @@
     const st = dayState(d);
     const row = {
       name: u.profile.name, org: u.profile.org || "", spec: u.profile.spec || "",
+      nationality: u.profile.nationality || "", city: u.profile.city || "",
       score: st.score, answered: st.index + (answered ? 1 : 0), correct: st.correct,
       bestCombo: st.bestStreak, finished: !!st.finished, updatedAt: new Date().toISOString()
     };
@@ -185,7 +167,8 @@
   function pushProfile() {
     const u = me();
     if (!db || !u) return;
-    const p = { name: u.profile.name, org: u.profile.org || "", spec: u.profile.spec || "", lastSeen: new Date().toISOString() };
+    const p = { name: u.profile.name, org: u.profile.org || "", spec: u.profile.spec || "",
+      nationality: u.profile.nationality || "", city: u.profile.city || "", lastSeen: new Date().toISOString() };
     if (CFG.sendContactDetails) { p.email = u.profile.email; p.phone = u.profile.phone || ""; }
     db.ref(root + "/trainees/" + uid).update(p).catch(() => {});
   }
@@ -234,11 +217,11 @@
       return '<li class="board-item ' + (i < 3 ? "t" + (i + 1) : "") + (mine ? " me" : "") + '">' +
         '<span class="rank">' + (medal[i] || i + 1) + "</span>" +
         '<span class="who"><b>' + esc(r.name) + (mine ? " (" + esc(t("you")) + ")" : "") + "</b>" +
-        "<span>" + (r.finished ? "🏁 " : "") + Math.min(r.answered || 0, total) + "/" + total + " " + esc(t("answered")) + (r.org ? " • " + esc(r.org) : "") + "</span></span>" +
+        "<span>" + (r.finished ? "🏁 " : "") + Math.min(r.answered || 0, total) + "/" + total + "</span></span>" +
         '<span class="pts">' + (r.score || 0) + "</span></li>";
     }).join("");
     const rank = rows.findIndex((r) => r.id === uid) + 1;
-    $("myRank").textContent = rank ? t("myRank").replace("{r}", "#" + rank).replace("{n}", rows.length) : "";
+    $("myRank").textContent = rank ? "#" + rank + " / " + rows.length : "";
     if (rank && lastRank && rank < lastRank) {
       SFX.rankUp();
       const el = list.querySelector(".me");
@@ -253,7 +236,6 @@
     document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
     document.title = t("title");
     $("langBtn").textContent = t("langBtn");
-    $("musicBtn").textContent = musicLabel();
     $("logoutBtn").textContent = t("logout");
     $("logoutBtn").classList.toggle("hidden", !me());
     render(true);
@@ -268,29 +250,42 @@
     if (screen === "result") return renderResult(c);
   }
 
+  function options(list, val) {
+    const i = lang === "ar" ? 1 : 2;
+    return list.map((o) => '<option value="' + o[0] + '"' + (val === o[0] ? " selected" : "") + ">" + esc(o[i]) + "</option>").join("");
+  }
+  function labelOf(list, key) {
+    const o = list.find((x) => x[0] === key);
+    return o ? o[lang === "ar" ? 1 : 2] : "";
+  }
+
   function renderLogin(c) {
     const p = (me() && me().profile) || {};
+    const LS = window.QUIZ_LISTS;
+    const sel = (name, label, list) => '<select name="' + name + '" required><option value="" disabled' + (p[name] ? "" : " selected") + ">" + esc(label) + "</option>" + options(list, p[name]) + "</select>";
     c.innerHTML =
-      '<div class="mario-buddy">🏡</div><h1>' + esc(t("title")) + '</h1><p class="subtitle">' + esc(t("sub")) + "</p>" +
+      '<div class="mario-buddy">' + pixelEngineer(1.5) + "</div><h1>" + esc(t("title")) + "</h1>" +
       '<form id="f">' +
       '<input name="name" required maxlength="60" placeholder="' + esc(t("name")) + '" value="' + esc(p.name) + '">' +
       '<input name="email" type="email" required maxlength="120" placeholder="' + esc(t("email")) + '" value="' + esc(p.email) + '">' +
+      '<div class="row2">' + sel("nationality", t("nat"), LS.nationalities) + sel("city", t("city"), LS.cities) + "</div>" +
+      sel("spec", t("spec"), LS.disciplines) +
       '<div class="row2"><input name="phone" type="tel" maxlength="30" placeholder="' + esc(t("phone")) + '" value="' + esc(p.phone) + '">' +
       '<input name="org" maxlength="80" placeholder="' + esc(t("org")) + '" value="' + esc(p.org) + '"></div>' +
-      '<select name="spec">' + Object.keys(t("specs")).map((k) => '<option value="' + k + '"' + (p.spec === k ? " selected" : "") + ">" + esc(t("spec")) + ": " + esc(t("specs")[k]) + "</option>").join("") + "</select>" +
-      '<p class="hint">' + esc(t("hint")) + "</p>" +
       '<div style="text-align:center"><button class="big-btn" type="submit">' + esc(t("go")) + "</button></div></form>";
     $("f").onsubmit = (e) => {
       e.preventDefault();
       const f = new FormData(e.target);
       const email = String(f.get("email")).trim().toLowerCase();
       const id = hashId(email);
-      const profile = { name: String(f.get("name")).trim(), email, phone: String(f.get("phone") || "").trim(), org: String(f.get("org") || "").trim(), spec: String(f.get("spec") || "") };
+      const profile = {
+        name: String(f.get("name")).trim(), email, phone: String(f.get("phone") || "").trim(), org: String(f.get("org") || "").trim(),
+        spec: String(f.get("spec") || ""), nationality: String(f.get("nationality") || ""), city: String(f.get("city") || "")
+      };
       users[id] = users[id] || { profile, days: {} };
       users[id].profile = profile;
       uid = id;
       persist();
-      SFX.start();
       pushProfile();
       screen = "home";
       pullProgress().then(() => { if (screen === "home") render(); renderBoard(); });
@@ -306,15 +301,13 @@
     if (st && st.finished) label = t("replay");
     else if (st && st.index > 0) label = t("resume") + " " + (st.index + 1);
     c.innerHTML =
-      '<div class="mario-buddy">👷</div><h1>' + esc(t("hello")) + " " + esc(u.profile.name) + "!</h1>" +
-      '<p class="subtitle">' + esc(t("pickDay")) + "</p>" +
+      '<div class="mario-buddy">' + pixelEngineer(1.5) + "</div><h1>" + esc(t("hello")) + " " + esc(u.profile.name.split(" ")[0]) + "!</h1>" +
       '<div class="days">' + days().map((d) => {
         const s = u.days[d];
         const status = s && s.finished ? "✅ " + s.score : s && s.index ? s.index + "/" + qs(d).length : t("notStarted");
         return '<button type="button" class="answer-btn day-btn' + (d === selectedDay ? " active" : "") + '" data-d="' + d + '"><span class="num">' + esc(t("day")) + " " + d + '</span><span class="st">' + esc(status) + "</span></button>";
       }).join("") + "</div>" +
-      '<div class="day-title">' + esc(DATA.days[selectedDay].title[lang]) + " • " + total + " " + esc(t("q")) + "</div>" +
-      '<p class="hint" style="margin-top:.4rem">' + esc(t("rules")) + "</p>" +
+      '<div class="day-title">' + esc(DATA.days[selectedDay].title[lang]) + "</div>" +
       '<button class="big-btn" id="goBtn" type="button">' + esc(label) + "</button>";
     c.querySelectorAll(".day-btn").forEach((b) => b.onclick = () => {
       SFX.tap();
@@ -405,6 +398,7 @@
       if (navigator.vibrate) navigator.vibrate(120);
     }
     st.answers.push({ id: q.id, chosen: k, correct: ok, ms, points, mult });
+    if (db && uid) db.ref(root + "/answers/day" + selectedDay + "/" + uid + "/" + q.id).set({ chosen: k || "", correct: ok ? 1 : 0, ms, level: q.level }).catch(() => {});
     persist();
     pushProgress(selectedDay);
     render(true);
@@ -423,14 +417,12 @@
     const rl = altReason ? (lang === "ar" ? "en" : "ar") : lang;
     const txt = L(q, rl);
     const hasAlt = q.en && q.en.reason;
-    const head = rec.correct
-      ? t("right")[st.index % 4] + " +" + rec.points + " 🪙"
-      : (rec.chosen ? t("wrong") : t("timeout")) + " • " + t("correctIs") + (lang === "ar" ? AR_KEYS[LETTERS.indexOf(q.answer)] : q.answer);
+    const head = rec.correct ? "✅ +" + rec.points + " 🪙" : (rec.chosen ? "❌" : "⏰") + " " + t("correctIs") + (lang === "ar" ? AR_KEYS[LETTERS.indexOf(q.answer)] : q.answer);
     const last = st.index + 1 >= list.length;
     $("fb").innerHTML =
       '<div class="feedback ' + (rec.correct ? "good" : "bad") + '">' + esc(head) + "</div>" +
       '<div class="why-box" dir="' + (rl === "ar" ? "rtl" : "ltr") + '">💡 ' + esc(txt.reason) +
-      (hasAlt ? '<span class="alt" id="altBtn">' + esc(altReason ? (lang === "ar" ? "اقرأ بالعربية" : "Read in English") : t("seeAlt")) + "</span>" : "") + "</div>" +
+      (hasAlt ? '<span class="alt" id="altBtn">' + (rl === "ar" ? "EN" : "ع") + "</span>" : "") + "</div>" +
       '<div class="actions"><button class="big-btn" id="nextBtn" type="button">' + esc(last ? t("finish") : t("next")) + "</button></div>";
     if (hasAlt) $("altBtn").onclick = () => { altReason = !altReason; showFeedback(rec); };
     $("nextBtn").onclick = next;
@@ -526,7 +518,6 @@
 
   // ---------------- controls ----------------
   $("langBtn").onclick = () => { lang = lang === "ar" ? "en" : "ar"; save(KEY.lang, lang); SFX.tap(); applyLang(); };
-  $("musicBtn").onclick = () => { musicOn ? stopMusic() : startMusic(); $("musicBtn").textContent = musicLabel(); };
   $("logoutBtn").onclick = () => {
     clearInterval(timer); timer = null;
     uid = null; persist();

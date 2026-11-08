@@ -457,3 +457,10 @@ html[lang="ar"] .pop { font-family: 'Baloo Bhaijaan 2', sans-serif; font-size: 2
   .toolbar .music-btn { font-size: .78rem; padding: .35rem .7rem; border-width: 2px; }
   body { padding-top: 62px; }
 }
+
+/* original pixel engineer */
+.pixel-eng { display: inline-block; vertical-align: top; direction: ltr; }
+.runner span { font-size: 0; display: inline-block; }
+.mario-buddy { direction: ltr; margin-bottom: .4rem; }
+form select:invalid { color: #8a7aa8; }
+.why-box .alt { display: inline-block; margin: 0 .4rem; padding: 0 .5rem; border-radius: 999px; background: #ffd23e; color: #6b4a00; font-size: .75rem; font-weight: 700; text-decoration: none; }

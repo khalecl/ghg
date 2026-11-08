@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Green Buildings Quiz – Results export</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
+<style>
+  body { font-family: 'Fredoka', sans-serif; background: linear-gradient(180deg, #5c94fc 0%, #9fd0ff 60%, #c8f5e1 100%); min-height: 100vh; margin: 0; padding: 24px; color: #3d2b5a; }
+  .card { background: rgba(255,255,255,.95); border: 5px solid #7c5cbf; border-radius: 1.6rem; padding: 1.4rem; max-width: 1100px; margin: 0 auto 18px; box-shadow: 0 10px 0 rgba(0,0,0,.12); }
+  h1 { color: #e52521; margin: 0 0 .4rem; }
+  button { font: inherit; font-weight: 700; padding: .55rem 1.3rem; border-radius: 999px; border: none; cursor: pointer; color: #fff; background: linear-gradient(180deg, #ff6b5e, #e52521); box-shadow: 0 4px 0 #a01515; margin: .3rem .3rem .3rem 0; }
+  button.alt { background: linear-gradient(180deg, #7fe08a, #43d14f); box-shadow: 0 4px 0 #2a9d3a; color: #0d5c1a; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .box { background: #f4effc; border-radius: 1rem; padding: .8rem 1rem; }
+  .box h3 { margin: 0 0 .4rem; color: #7c5cbf; font-size: 1rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  th, td { padding: .3rem .5rem; text-align: left; border-bottom: 1px solid #e3d8f5; }
+  th { color: #7c5cbf; }
+  .muted { color: #7c5cbf; font-size: .9rem; }
+  .scroll { max-height: 420px; overflow: auto; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Results export</h1>
+  <p class="muted" id="status">Loading…</p>
+  <button id="csvPlayers">Download trainees × day (CSV)</button>
+  <button id="csvAnswers">Download every answer (CSV)</button>
+  <button class="alt" id="csvItems">Download question analysis (CSV)</button>
+</div>
+<div class="card"><div class="grid" id="summary"></div></div>
+<div class="card"><h3>Hardest questions (lowest % correct)</h3><div class="scroll"><table id="items"></table></div></div>
+
+<script src="config.js"></script>
+<script src="lists.js"></script>
+<script src="data/questions.js"></script>
+<script>
+(function () {
+  const CFG = window.QUIZ_CONFIG, LS = window.QUIZ_LISTS, root = CFG.rootPath || "gbquiz";
+  const lab = (list, k) => { const o = LS[list].find((x) => x[0] === k); return o ? o[2] : (k || ""); };
+  const qById = {};
+  Object.keys(QUIZ_DATA.days).forEach((d) => QUIZ_DATA.days[d].questions.forEach((q) => { qById[q.id] = q; }));
+  let players = [], answers = [], items = [];
+
+  function csv(rows) {
+    const cell = (v) => { const s = String(v == null ? "" : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    return "﻿" + rows.map((r) => r.map(cell).join(",")).join("\n");
+  }
+  function download(name, rows) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv(rows)], { type: "text/csv;charset=utf-8" }));
+    a.download = name;
+    a.click();
+  }
+
+  firebase.initializeApp(CFG.firebase);
+  firebase.database().ref(root).once("value").then((snap) => {
+    const all = snap.val() || {};
+    const trainees = all.trainees || {};
+    // one row per trainee per day
+    Object.keys(all).filter((k) => /^day\d+$/.test(k)).forEach((dk) => {
+      const board = (all[dk] && all[dk].board) || {};
+      Object.keys(board).forEach((id) => {
+        const r = board[id], p = trainees[id] || {};
+        players.push({ id, day: dk.slice(3), name: r.name || p.name, nationality: r.nationality || p.nationality, city: r.city || p.city,
+          spec: r.spec || p.spec, org: r.org || p.org, email: p.email || "", phone: p.phone || "",
+          score: r.score || 0, answered: r.answered || 0, correct: r.correct || 0, bestCombo: r.bestCombo || 0, finished: !!r.finished, updatedAt: r.updatedAt || "" });
+      });
+    });
+    // every answer
+    const ans = all.answers || {};
+    Object.keys(ans).forEach((dk) => Object.keys(ans[dk]).forEach((id) => Object.keys(ans[dk][id]).forEach((qid) => {
+      const a = ans[dk][id][qid], p = trainees[id] || {};
+      answers.push({ day: dk.slice(3), id, name: p.name || "", nationality: p.nationality || "", city: p.city || "", spec: p.spec || "",
+        qid, level: a.level || (qById[qid] || {}).level, chosen: a.chosen, correctAnswer: (qById[qid] || {}).answer, correct: a.correct, ms: a.ms });
+    })));
+    // question analysis
+    const agg = {};
+    answers.forEach((a) => { const g = agg[a.qid] = agg[a.qid] || { n: 0, c: 0, ms: 0, picks: { A: 0, B: 0, C: 0, D: 0, "": 0 } }; g.n++; g.c += a.correct; g.ms += a.ms || 0; g.picks[a.chosen || ""]++; });
+    items = Object.keys(agg).map((qid) => { const g = agg[qid], q = qById[qid] || {}; return { qid, level: q.level, n: g.n, pct: Math.round(g.c / g.n * 100), avgS: (g.ms / g.n / 1000).toFixed(1), picks: g.picks, answer: q.answer, text: q.en ? q.en.question : (q.ar || {}).question }; })
+      .sort((a, b) => a.pct - b.pct);
+    render();
+  }).catch((e) => { document.getElementById("status").textContent = "Could not read the database: " + e.message; });
+
+  function countBy(rows, key, list) {
+    const m = {};
+    const seen = new Set();
+    rows.forEach((r) => { if (seen.has(r.id)) return; seen.add(r.id); const k = lab(list, r[key]) || "—"; m[k] = (m[k] || 0) + 1; });
+    return Object.entries(m).sort((a, b) => b[1] - a[1]);
+  }
+  function render() {
+    const ids = new Set(players.map((p) => p.id));
+    document.getElementById("status").textContent = ids.size + " trainees • " + players.length + " trainee-day rows • " + answers.length + " answers";
+    const box = (title, rows) => '<div class="box"><h3>' + title + "</h3><table>" + rows.map((r) => "<tr><td>" + r[0] + "</td><td>" + r[1] + "</td></tr>").join("") + "</table></div>";
+    const byDay = {};
+    players.forEach((p) => { const d = byDay[p.day] = byDay[p.day] || { n: 0, s: 0, acc: 0 }; d.n++; d.s += p.score; d.acc += p.answered ? p.correct / p.answered : 0; });
+    document.getElementById("summary").innerHTML =
+      box("By day (players / avg score / avg accuracy)", Object.keys(byDay).sort().map((d) => ["Day " + d, byDay[d].n + " / " + Math.round(byDay[d].s / byDay[d].n) + " / " + Math.round(byDay[d].acc / byDay[d].n * 100) + "%"])) +
+      box("Discipline", countBy(players, "spec", "disciplines")) +
+      box("City", countBy(players, "city", "cities")) +
+      box("Nationality", countBy(players, "nationality", "nationalities"));
+    document.getElementById("items").innerHTML = "<tr><th>Question</th><th>Level</th><th>Answers</th><th>% correct</th><th>Avg s</th><th>A/B/C/D/none</th><th>Key</th><th>Text</th></tr>" +
+      items.slice(0, 40).map((i) => "<tr><td>" + i.qid + "</td><td>" + i.level + "</td><td>" + i.n + "</td><td>" + i.pct + "%</td><td>" + i.avgS + "</td><td>" + ["A", "B", "C", "D", ""].map((k) => i.picks[k]).join("/") + "</td><td>" + i.answer + "</td><td>" + (i.text || "").replace(/</g, "&lt;") + "</td></tr>").join("");
+  }
+
+  document.getElementById("csvPlayers").onclick = () => download("gb_quiz_trainees.csv",
+    [["day", "name", "nationality", "city", "discipline", "organization", "email", "phone", "score", "answered", "correct", "accuracy_pct", "best_combo", "finished", "updated_at", "trainee_id"]]
+      .concat(players.map((p) => [p.day, p.name, lab("nationalities", p.nationality), lab("cities", p.city), lab("disciplines", p.spec), p.org, p.email, p.phone,
+        p.score, p.answered, p.correct, p.answered ? Math.round(p.correct / p.answered * 100) : 0, p.bestCombo, p.finished, p.updatedAt, p.id])));
+  document.getElementById("csvAnswers").onclick = () => download("gb_quiz_answers.csv",
+    [["day", "question_id", "level", "trainee_id", "name", "nationality", "city", "discipline", "chosen", "correct_answer", "correct", "seconds"]]
+      .concat(answers.map((a) => [a.day, a.qid, a.level, a.id, a.name, lab("nationalities", a.nationality), lab("cities", a.city), lab("disciplines", a.spec), a.chosen, a.correctAnswer, a.correct, (a.ms / 1000).toFixed(1)])));
+  document.getElementById("csvItems").onclick = () => download("gb_quiz_question_analysis.csv",
+    [["question_id", "level", "answers", "pct_correct", "avg_seconds", "picked_A", "picked_B", "picked_C", "picked_D", "no_answer", "correct_answer", "question_en"]]
+      .concat(items.map((i) => [i.qid, i.level, i.n, i.pct, i.avgS, i.picks.A, i.picks.B, i.picks.C, i.picks.D, i.picks[""], i.answer, i.text])));
+})();
+</script>
+</body>
+</html>
