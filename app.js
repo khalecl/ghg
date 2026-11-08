@@ -390,11 +390,13 @@
       st.score += points;
       st.correct += 1;
       SFX.right();
+      if (window.GBScene) window.GBScene.correct(st.streak);
       if (ev) coinBurst(ev.clientX, ev.clientY);
       if (st.streak >= 2) { setTimeout(SFX.combo, 180); popText(t("combo") + " " + st.streak, "×" + (+mult.toFixed(2))); }
     } else {
       st.streak = 0;
       SFX.wrong();
+      if (window.GBScene) window.GBScene.wrong();
       if (navigator.vibrate) navigator.vibrate(120);
     }
     st.answers.push({ id: q.id, chosen: k, correct: ok, ms, points, mult });

@@ -464,3 +464,7 @@ html[lang="ar"] .pop { font-family: 'Baloo Bhaijaan 2', sans-serif; font-size: 2
 .mario-buddy { direction: ltr; margin-bottom: .4rem; }
 form select:invalid { color: #8a7aa8; }
 .why-box .alt { display: inline-block; margin: 0 .4rem; padding: 0 .5rem; border-radius: 999px; background: #ffd23e; color: #6b4a00; font-size: .75rem; font-weight: 700; text-decoration: none; }
+
+/* 16-bit side-scroller along the bottom */
+#scene { position: fixed; left: 0; bottom: 0; z-index: 5; pointer-events: none; image-rendering: pixelated; }
+body { padding-bottom: 175px !important; }
