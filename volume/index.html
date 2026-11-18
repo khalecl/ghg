@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1F2D4D">
+<title>Trust Your Eyes? | Guess the Volume</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
+</head>
+<body>
+<main id="app"></main>
+<script src="questions.js"></script>
+<script src="shapes.js"></script>
+<script>
+(function () {
+  const CFG = window.VQ_CONFIG, QS = window.VQ_QUESTIONS, app = document.getElementById("app");
+  let db = null;
+  try { firebase.initializeApp(CFG.firebase); db = firebase.database(); } catch (e) { db = null; }
+  const ROOT = CFG.rootPath;
+  let uid = localStorage.getItem("vq_uid");
+  if (!uid) { uid = "u" + Math.random().toString(36).slice(2, 10); localStorage.setItem("vq_uid", uid); }
+  const st = JSON.parse(localStorage.getItem("vq_state") || "null") || { name: "", i: 0, score: 0, correct: 0, round: null };
+  const save = () => localStorage.setItem("vq_state", JSON.stringify(st));
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // The presenter can start a new round; a new round resets every phone.
+  if (db) db.ref(ROOT + "/round").on("value", snap => {
+    const r = snap.val() || "r0";
+    const changed = st.round && st.round !== r;
+    if (changed) { st.i = 0; st.score = 0; st.correct = 0; }
+    st.round = r; save();
+    if (!started || changed) render();
+  });
+  let started = false;
+
+  function push() {
+    if (!db) return;
+    db.ref(`${ROOT}/${st.round || "r0"}/players/${uid}`).set({ name: st.name, score: st.score, correct: st.correct, done: st.i, t: Date.now() }).catch(() => {});
+  }
+
+  function render() {
+    started = true;
+    if (!st.name) return join();
+    if (st.i >= QS.length) return finish();
+    ask(QS[st.i]);
+  }
+
+  function join() {
+    app.innerHTML = `<h1>Trust your eyes?</h1><p class="sub">5 quick questions on area and volume. Guess fast: speed earns points.</p>
+      <div class="card"><div class="fig">${FIGURES.cabins()}</div>
+      <label for="nm"><b>Your name</b></label><input id="nm" maxlength="24" autocomplete="off" placeholder="e.g. Sara">
+      <button class="btn" id="go">Start</button></div>`;
+    const go = () => { const v = document.getElementById("nm").value.trim(); if (!v) return; st.name = v; save(); push(); render(); };
+    document.getElementById("go").onclick = go;
+    document.getElementById("nm").onkeydown = e => { if (e.key === "Enter") go(); };
+  }
+
+  function ask(q) {
+    const t0 = Date.now(), total = CFG.seconds * 1000;
+    app.innerHTML = `<div class="top"><span class="pill">${st.i + 1} / ${QS.length} · ${q.topic}</span><span>⭐ ${st.score}</span></div>
+      <div class="card"><div class="bar"><i id="tb" style="width:100%"></i></div>
+      <div class="fig" id="fig">${FIGURES[q.fig](false)}</div><div class="q">${q.q}</div>
+      <div id="opts">${q.options.map((o, k) => `<button class="opt" data-k="${k}">${String.fromCharCode(65 + k)}. ${o}</button>`).join("")}</div>
+      <div id="after"></div></div>`;
+    const tb = document.getElementById("tb");
+    const timer = setInterval(() => {
+      const left = Math.max(0, total - (Date.now() - t0));
+      tb.style.width = (left / total * 100) + "%";
+      if (!left) answer(-1);
+    }, 100);
+    let done = false;
+    function answer(k) {
+      if (done) return; done = true; clearInterval(timer);
+      const ms = Date.now() - t0, ok = k === q.answer;
+      const pts = ok ? CFG.basePoints + Math.round(CFG.maxSpeedBonus * Math.max(0, 1 - ms / total)) : 0;
+      st.score += pts; if (ok) st.correct++;
+      document.querySelectorAll(".opt").forEach(b => {
+        b.disabled = true; const bk = +b.dataset.k;
+        if (bk === q.answer) b.classList.add("ok"); else if (bk === k) b.classList.add("bad");
+      });
+      if (q.fig === "cone") document.getElementById("fig").innerHTML = FIGURES.cone(true);
+      if (db) db.ref(`${ROOT}/${st.round || "r0"}/answers/${q.id}/${uid}`).set({ k, ok: ok ? 1 : 0, ms }).catch(() => {});
+      st.i++; save(); push();
+      if (ok && window.confetti) confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
+      const fooled = k === q.trap;
+      document.getElementById("after").innerHTML = `<div class="verdict">${ok ? "✅ Correct! +" + pts : (k < 0 ? "⏱ Time's up" : (fooled ? "👀 Your eyes fooled you!" : "❌ Not quite"))}</div>
+        <div class="why">${q.why}</div><button class="btn" id="nx">${st.i < QS.length ? "Next question" : "See my score"}</button>`;
+      document.getElementById("nx").onclick = render;
+    }
+    document.querySelectorAll(".opt").forEach(b => b.onclick = () => answer(+b.dataset.k));
+  }
+
+  function finish() {
+    if (window.confetti) confetti({ particleCount: 140, spread: 90, origin: { y: 0.6 } });
+    app.innerHTML = `<h1>Well done, ${esc(st.name)}!</h1><div class="card"><div>Your score</div><div class="score">${st.score}</div>
+      <div>${st.correct} of ${QS.length} correct</div></div>
+      <div class="card"><b>The lesson:</b> our eyes judge length, not area or volume. Double the size and area grows ×4, volume ×8. That is why architects calculate.</div>
+      <p class="sub">Look at the main screen for the results.</p>`;
+  }
+
+  if (!db) render();
+  else setTimeout(() => { if (!started) render(); }, 2500);
+})();
+</script>
+</body>
+</html>

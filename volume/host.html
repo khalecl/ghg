@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trust Your Eyes? | Presenter screen</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
+<style>
+body{background:#1F2D4D;color:#F4F6F9}
+.wrap{display:grid;grid-template-columns:340px 1fr;gap:28px;padding:28px 36px;min-height:100vh}
+h1{font-size:40px;margin:0 0 4px;color:#fff}
+.join{background:#fff;color:#1F2D4D;border-radius:18px;padding:20px;text-align:center}
+#qr{display:flex;justify-content:center;margin:10px 0}
+.url{font-size:15px;word-break:break-all;color:#2F6690;font-weight:600}
+.count{font-size:64px;font-weight:800;color:#F2A65A;line-height:1}
+.panel{background:#26375C;border-radius:18px;padding:22px 26px}
+.panel h2{margin:0 0 4px;font-size:24px;color:#fff}
+.note{color:#AAB6CC;margin:0 0 14px;font-size:16px}
+.row{display:grid;grid-template-columns:170px 1fr 110px;gap:14px;align-items:center;margin:12px 0;font-size:18px}
+.track{background:#1A2848;border-radius:8px;height:34px;position:relative;overflow:hidden}
+.seg{position:absolute;top:0;bottom:0;transition:width .6s ease,left .6s ease}
+.right{background:#4FB37B}.fool{background:#F2A65A}.other{background:#6C7A96}
+.pct{font-weight:800;font-size:22px;color:#F2A65A}
+.legend span{display:inline-flex;align-items:center;gap:6px;margin-right:18px;font-size:15px;color:#D7DEEA}
+.legend i{width:14px;height:14px;border-radius:3px;display:inline-block}
+ol{margin:6px 0 0;padding-left:26px;font-size:20px;line-height:1.7}
+ol b{color:#F2A65A}
+.reset{background:transparent;border:1px solid #6C7A96;color:#AAB6CC;border-radius:10px;padding:8px 14px;font:inherit;cursor:pointer;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <h1>Trust your eyes?</h1>
+    <p class="note">Scan to play on your phone</p>
+    <div class="join"><div id="qr"></div><div class="url" id="url"></div></div>
+    <div class="panel" style="margin-top:20px;text-align:center"><div class="count" id="count">0</div><div class="note" style="margin:6px 0 0">players joined</div></div>
+    <div class="panel" style="margin-top:20px"><h2>🏆 Top 5</h2><ol id="board"><li style="color:#AAB6CC">Waiting for players…</li></ol></div>
+    <button class="reset" id="reset">Start a new round</button>
+  </div>
+  <div class="panel">
+    <h2>How many did the illusion fool?</h2>
+    <p class="note">Live answers to each question. Orange = picked the answer the eye suggests.</p>
+    <div class="legend"><span><i class="right"></i>Correct</span><span><i class="fool"></i>Fooled by the eye</span><span><i class="other"></i>Other wrong / no answer</span></div>
+    <div id="chart"></div>
+  </div>
+</div>
+<script src="questions.js"></script>
+<script>
+(function () {
+  const CFG = window.VQ_CONFIG, QS = window.VQ_QUESTIONS;
+  const playUrl = location.href.replace(/host\.html.*$/, "");
+  document.getElementById("url").textContent = playUrl.replace(/^https?:\/\//, "");
+  new QRCode(document.getElementById("qr"), { text: playUrl, width: 240, height: 240, colorDark: "#1F2D4D" });
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  firebase.initializeApp(CFG.firebase);
+  const db = firebase.database(), ROOT = CFG.rootPath;
+  let round = null, off = [];
+
+  document.getElementById("reset").onclick = () => {
+    if (confirm("Start a new round? Phones will restart from question 1.")) db.ref(ROOT + "/round").set("r" + Date.now());
+  };
+
+  db.ref(ROOT + "/round").on("value", snap => {
+    round = snap.val();
+    if (!round) { db.ref(ROOT + "/round").set("r" + Date.now()); return; }
+    off.forEach(f => f()); off = [];
+    const p = db.ref(`${ROOT}/${round}/players`), a = db.ref(`${ROOT}/${round}/answers`);
+    const pf = p.on("value", s => drawPlayers(s.val() || {})), af = a.on("value", s => drawChart(s.val() || {}));
+    off.push(() => p.off("value", pf), () => a.off("value", af));
+    drawChart({}); drawPlayers({});
+  });
+
+  let nPlayers = 0;
+  function drawPlayers(pl) {
+    const rows = Object.values(pl).sort((x, y) => y.score - x.score);
+    nPlayers = rows.length;
+    document.getElementById("count").textContent = rows.length;
+    document.getElementById("board").innerHTML = rows.length
+      ? rows.slice(0, 5).map(r => `<li>${esc(r.name)} · <b>${r.score}</b></li>`).join("")
+      : `<li style="color:#AAB6CC">Waiting for players…</li>`;
+  }
+
+  function drawChart(ans) {
+    document.getElementById("chart").innerHTML = QS.map(q => {
+      const list = Object.values(ans[q.id] || {}), n = list.length;
+      const ok = list.filter(r => r.k === q.answer).length, fool = list.filter(r => r.k === q.trap).length;
+      const pc = x => n ? x / n * 100 : 0;
+      return `<div class="row"><div>${q.topic}<div class="note" style="margin:0;font-size:13px">${n} answer${n === 1 ? "" : "s"}</div></div>
+        <div class="track"><div class="seg right" style="left:0;width:${pc(ok)}%"></div>
+        <div class="seg fool" style="left:${pc(ok)}%;width:${pc(fool)}%"></div>
+        <div class="seg other" style="left:${pc(ok + fool)}%;width:${pc(n - ok - fool)}%"></div></div>
+        <div class="pct">${n ? Math.round(pc(fool)) + "% 👀" : "–"}</div></div>`;
+    }).join("");
+  }
+})();
+</script>
+</body>
+</html>
