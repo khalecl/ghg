@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trust Your Eyes? | Presenter screen</title>
-<link rel="stylesheet" href="style.css">
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
 <style>
-body{background:#1F2D4D;color:#F4F6F9}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,"Segoe UI",Arial,sans-serif;background:#1F2D4D;color:#F4F6F9}
 .wrap{display:grid;grid-template-columns:340px 1fr;gap:28px;padding:28px 36px;min-height:100vh}
 h1{font-size:40px;margin:0 0 4px;color:#fff}
 .join{background:#fff;color:#1F2D4D;border-radius:18px;padding:20px;text-align:center}
@@ -19,8 +19,8 @@ h1{font-size:40px;margin:0 0 4px;color:#fff}
 .panel{background:#26375C;border-radius:18px;padding:22px 26px}
 .panel h2{margin:0 0 4px;font-size:24px;color:#fff}
 .note{color:#AAB6CC;margin:0 0 14px;font-size:16px}
-.row{display:grid;grid-template-columns:170px 1fr 110px;gap:14px;align-items:center;margin:12px 0;font-size:18px}
-.track{background:#1A2848;border-radius:8px;height:34px;position:relative;overflow:hidden}
+.row{display:grid;grid-template-columns:190px 1fr 100px;gap:14px;align-items:center;margin:7px 0;font-size:17px}
+.track{background:#1A2848;border-radius:8px;height:26px;position:relative;overflow:hidden}
 .seg{position:absolute;top:0;bottom:0;transition:width .6s ease,left .6s ease}
 .right{background:#4FB37B}.fool{background:#F2A65A}.other{background:#6C7A96}
 .pct{font-weight:800;font-size:22px;color:#F2A65A}
@@ -48,54 +48,50 @@ ol b{color:#F2A65A}
     <div id="chart"></div>
   </div>
 </div>
-<script src="questions.js"></script>
+<script src="config.js"></script>
+<script src="data/questions.js"></script>
 <script>
 (function () {
-  const CFG = window.VQ_CONFIG, QS = window.VQ_QUESTIONS;
+  const CFG = window.QUIZ_CONFIG, QS = window.QUIZ_DATA.days["1"].questions;
+  const NAMES = ["Site cabins", "Double the room", "Water tanks", "Gabled hall", "Columns", "Tower core", "Vault volume", "Vault cladding", "Cone roof", "Silo volume", "Silo steel", "Cube vs tower", "1:10 model"];
   const playUrl = location.href.replace(/host\.html.*$/, "");
   document.getElementById("url").textContent = playUrl.replace(/^https?:\/\//, "");
   new QRCode(document.getElementById("qr"), { text: playUrl, width: 240, height: 240, colorDark: "#1F2D4D" });
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   firebase.initializeApp(CFG.firebase);
   const db = firebase.database(), ROOT = CFG.rootPath;
-  let round = null, off = [];
 
   document.getElementById("reset").onclick = () => {
-    if (confirm("Start a new round? Phones will restart from question 1.")) db.ref(ROOT + "/round").set("r" + Date.now());
+    if (!confirm("Start a new round? All scores are cleared and phones restart.")) return;
+    const u = {}; ["day1", "answers", "progress", "trainees"].forEach(k => u[k] = null);
+    u.round = "r" + Date.now();
+    db.ref(ROOT).update(u);
   };
+  db.ref(ROOT + "/round").once("value", s => { if (!s.val()) db.ref(ROOT + "/round").set("r" + Date.now()); });
 
-  db.ref(ROOT + "/round").on("value", snap => {
-    round = snap.val();
-    if (!round) { db.ref(ROOT + "/round").set("r" + Date.now()); return; }
-    off.forEach(f => f()); off = [];
-    const p = db.ref(`${ROOT}/${round}/players`), a = db.ref(`${ROOT}/${round}/answers`);
-    const pf = p.on("value", s => drawPlayers(s.val() || {})), af = a.on("value", s => drawChart(s.val() || {}));
-    off.push(() => p.off("value", pf), () => a.off("value", af));
-    drawChart({}); drawPlayers({});
+  db.ref(ROOT + "/day1/board").on("value", s => {
+    const rows = Object.values(s.val() || {}).sort((x, y) => y.score - x.score);
+    document.getElementById("count").textContent = rows.length;
+    const medal = ["🥇", "🥈", "🥉"];
+    document.getElementById("board").innerHTML = rows.length
+      ? rows.slice(0, 5).map((r, i) => `<li>${medal[i] || ""} ${esc(r.name)} · <b>${r.score}</b> <span style="color:#AAB6CC;font-size:15px">(${r.answered}/${QS.length})</span></li>`).join("")
+      : `<li style="color:#AAB6CC">Waiting for players…</li>`;
   });
 
-  let nPlayers = 0;
-  function drawPlayers(pl) {
-    const rows = Object.values(pl).sort((x, y) => y.score - x.score);
-    nPlayers = rows.length;
-    document.getElementById("count").textContent = rows.length;
-    document.getElementById("board").innerHTML = rows.length
-      ? rows.slice(0, 5).map(r => `<li>${esc(r.name)} · <b>${r.score}</b></li>`).join("")
-      : `<li style="color:#AAB6CC">Waiting for players…</li>`;
-  }
-
-  function drawChart(ans) {
-    document.getElementById("chart").innerHTML = QS.map(q => {
-      const list = Object.values(ans[q.id] || {}), n = list.length;
-      const ok = list.filter(r => r.k === q.answer).length, fool = list.filter(r => r.k === q.trap).length;
+  db.ref(ROOT + "/answers/day1").on("value", s => draw(s.val() || {}));
+  function draw(byUser) {
+    document.getElementById("chart").innerHTML = QS.map((q, i) => {
+      const list = Object.values(byUser).map(u => u[q.id]).filter(Boolean), n = list.length;
+      const ok = list.filter(r => r.chosen === q.answer).length, fool = list.filter(r => r.chosen === q.trap).length;
       const pc = x => n ? x / n * 100 : 0;
-      return `<div class="row"><div>${q.topic}<div class="note" style="margin:0;font-size:13px">${n} answer${n === 1 ? "" : "s"}</div></div>
+      return `<div class="row"><div>${i + 1}. ${NAMES[i] || q.id}<div class="note" style="margin:0;font-size:13px">${n} answer${n === 1 ? "" : "s"}</div></div>
         <div class="track"><div class="seg right" style="left:0;width:${pc(ok)}%"></div>
         <div class="seg fool" style="left:${pc(ok)}%;width:${pc(fool)}%"></div>
         <div class="seg other" style="left:${pc(ok + fool)}%;width:${pc(n - ok - fool)}%"></div></div>
         <div class="pct">${n ? Math.round(pc(fool)) + "% 👀" : "–"}</div></div>`;
     }).join("");
   }
+  draw({});
 })();
 </script>
 </body>
