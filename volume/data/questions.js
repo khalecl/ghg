@@ -367,6 +367,465 @@ window.QUIZ_DATA = {
       },
       "reason": "Lengths ×10 means volume ×10 × 10 × 10 = ×1,000. So 0.5 × 1,000 = 500 m³."
      }
+    },
+    {
+     "id": "V-Q14",
+     "level": "easy",
+     "section": "1",
+     "answer": "A",
+     "trap": "D",
+     "ar": {
+      "question": "مسقط أفقي على شكل L: مستطيل 12 × 8 م اقتُطع من زاويته 4 × 3 م. ما مساحة الأرضية؟",
+      "options": {
+       "A": "84 م²",
+       "B": "96 م²",
+       "C": "72 م²",
+       "D": "108 م²"
+      },
+      "reason": "12 × 8 = 96، ناقص الجزء المقتطع 4 × 3 = 12، يساوي 84 م². الجمع بدل الطرح يعطي 108."
+     },
+     "en": {
+      "question": "An L-shaped floor plan is a 12 × 8 m rectangle with a 4 × 3 m corner cut out. What is its floor area?",
+      "options": {
+       "A": "84 m²",
+       "B": "96 m²",
+       "C": "72 m²",
+       "D": "108 m²"
+      },
+      "reason": "12 × 8 = 96, minus the cut-out 4 × 3 = 12, gives 84 m². Adding instead of subtracting gives 108."
+     }
+    },
+    {
+     "id": "V-Q15",
+     "level": "easy",
+     "section": "1",
+     "answer": "B",
+     "trap": "D",
+     "ar": {
+      "question": "جدار جملوني مثلثي قاعدته 8 م وارتفاعه 3 م. ما مساحة الجدار المطلوب لياسته؟",
+      "options": {
+       "A": "24 م²",
+       "B": "12 م²",
+       "C": "11 م²",
+       "D": "6 م²"
+      },
+      "reason": "مساحة المثلث = ½ × القاعدة × الارتفاع = ½ × 8 × 3 = 12 م². نسيان ½ يعطي 24."
+     },
+     "en": {
+      "question": "A triangular gable wall has a base of 8 m and a height of 3 m. How much wall area is there to plaster?",
+      "options": {
+       "A": "24 m²",
+       "B": "12 m²",
+       "C": "11 m²",
+       "D": "6 m²"
+      },
+      "reason": "Triangle area = ½ × base × height = ½ × 8 × 3 = 12 m². Forgetting the ½ gives 24."
+     }
+    },
+    {
+     "id": "V-Q16",
+     "level": "easy",
+     "section": "1",
+     "answer": "C",
+     "trap": "A",
+     "ar": {
+      "question": "ساحة دائرية قطرها 20 م. كم مترًا مربعًا من البلاط تحتاج؟",
+      "options": {
+       "A": "62.8 م²",
+       "B": "1,256.6 م²",
+       "C": "314.2 م²",
+       "D": "157.1 م²"
+      },
+      "reason": "نصف القطر 10 م. المساحة = π × 10² ≈ 314.2 م². الرقم 62.8 هو المحيط، و1,256.6 يستخدم القطر بدل نصف القطر."
+     },
+     "en": {
+      "question": "A circular plaza is 20 m in diameter. How many m² of paving does it need?",
+      "options": {
+       "A": "62.8 m²",
+       "B": "1,256.6 m²",
+       "C": "314.2 m²",
+       "D": "157.1 m²"
+      },
+      "reason": "Radius = 10 m. Area = π × 10² ≈ 314.2 m². 62.8 is the circumference; 1,256.6 uses the diameter as the radius."
+     }
+    },
+    {
+     "id": "V-Q17",
+     "level": "easy",
+     "section": "1",
+     "answer": "A",
+     "trap": "B",
+     "ar": {
+      "question": "جناح سداسي مسقطه مضلع منتظم بستة أضلاع. كم قياس كل زاوية داخلية؟",
+      "options": {
+       "A": "120°",
+       "B": "108°",
+       "C": "135°",
+       "D": "60°"
+      },
+      "reason": "مجموع الزوايا = (6 − 2) × 180 = 720°. كل زاوية = 720 ÷ 6 = 120°."
+     },
+     "en": {
+      "question": "A hexagonal pavilion has a regular six-sided plan. What is each interior angle?",
+      "options": {
+       "A": "120°",
+       "B": "108°",
+       "C": "135°",
+       "D": "60°"
+      },
+      "reason": "Sum of angles = (6 − 2) × 180 = 720°. Each angle = 720 ÷ 6 = 120°."
+     }
+    },
+    {
+     "id": "V-Q18",
+     "level": "easy",
+     "section": "1",
+     "answer": "D",
+     "trap": "B",
+     "ar": {
+      "question": "غرفة 5 × 4 م وارتفاعها 3 م. ما مساحة الجدران المطلوب دهانها (دون السقف، وبإهمال الفتحات)؟",
+      "options": {
+       "A": "74 م²",
+       "B": "60 م²",
+       "C": "27 م²",
+       "D": "54 م²"
+      },
+      "reason": "المحيط 2 × (5 + 4) = 18 م. الجدران = 18 × 3 = 54 م². إضافة السقف 20 م² تعطي 74."
+     },
+     "en": {
+      "question": "A room is 5 × 4 m and 3 m high. How much wall area needs paint (no ceiling, ignore openings)?",
+      "options": {
+       "A": "74 m²",
+       "B": "60 m²",
+       "C": "27 m²",
+       "D": "54 m²"
+      },
+      "reason": "Perimeter 2 × (5 + 4) = 18 m. Walls = 18 × 3 = 54 m². Adding the 20 m² ceiling gives 74."
+     }
+    },
+    {
+     "id": "V-Q19",
+     "level": "medium",
+     "section": "1",
+     "answer": "B",
+     "trap": "C",
+     "ar": {
+      "question": "نافذة مستطيلة عرضها 1.2 م وارتفاعها 1.5 م، يعلوها نصف دائرة. ما مساحة الزجاج؟",
+      "options": {
+       "A": "1.80 م²",
+       "B": "2.37 م²",
+       "C": "2.93 م²",
+       "D": "2.16 م²"
+      },
+      "reason": "المستطيل 1.2 × 1.5 = 1.80. نصف الدائرة ½ × π × 0.6² ≈ 0.57. المجموع ≈ 2.37 م². الدائرة الكاملة تعطي 2.93."
+     },
+     "en": {
+      "question": "A window is a 1.2 m wide × 1.5 m tall rectangle with a semicircle on top. What is its glass area?",
+      "options": {
+       "A": "1.80 m²",
+       "B": "2.37 m²",
+       "C": "2.93 m²",
+       "D": "2.16 m²"
+      },
+      "reason": "Rectangle 1.2 × 1.5 = 1.80. Semicircle ½ × π × 0.6² ≈ 0.57. Total ≈ 2.37 m². A full circle gives 2.93."
+     }
+    },
+    {
+     "id": "V-Q20",
+     "level": "medium",
+     "section": "1",
+     "answer": "C",
+     "trap": "A",
+     "ar": {
+      "question": "منحدر لذوي الإعاقة يرتفع 1 م على مسافة أفقية 12 م. ما طول سطح المنحدر؟",
+      "options": {
+       "A": "12 م",
+       "B": "13 م",
+       "C": "12.04 م",
+       "D": "12.5 م"
+      },
+      "reason": "فيثاغورس: √(12² + 1²) = √145 ≈ 12.04 م. أطول من المسافة الأفقية بقليل فقط."
+     },
+     "en": {
+      "question": "An accessible ramp rises 1 m over a horizontal run of 12 m. How long is the ramp surface?",
+      "options": {
+       "A": "12 m",
+       "B": "13 m",
+       "C": "12.04 m",
+       "D": "12.5 m"
+      },
+      "reason": "Pythagoras: √(12² + 1²) = √145 ≈ 12.04 m. It is longer than the run, but only a little."
+     }
+    },
+    {
+     "id": "V-Q21",
+     "level": "medium",
+     "section": "1",
+     "answer": "A",
+     "trap": "B",
+     "ar": {
+      "question": "أرض 30 × 20 م في وسطها مبنى 20 × 10 م. ما مساحة الفناء المكشوف حوله؟",
+      "options": {
+       "A": "400 م²",
+       "B": "200 م²",
+       "C": "500 م²",
+       "D": "350 م²"
+      },
+      "reason": "الأرض 600 م² ناقص المبنى 200 م² = 400 م². الفناء ضعف مساحة المبنى."
+     },
+     "en": {
+      "question": "A 30 × 20 m site has a 20 × 10 m building in its centre. What is the area of the open courtyard around it?",
+      "options": {
+       "A": "400 m²",
+       "B": "200 m²",
+       "C": "500 m²",
+       "D": "350 m²"
+      },
+      "reason": "Site 600 m² minus building 200 m² = 400 m². The courtyard is twice the building's footprint."
+     }
+    },
+    {
+     "id": "V-Q22",
+     "level": "medium",
+     "section": "1",
+     "answer": "D",
+     "trap": "B",
+     "ar": {
+      "question": "قاعة اجتماعات مستطيلة 10 × 4 م، وفي كل طرف قصير نصف دائرة. ما مساحة أرضيتها؟",
+      "options": {
+       "A": "40.0 م²",
+       "B": "46.3 م²",
+       "C": "77.7 م²",
+       "D": "52.6 م²"
+      },
+      "reason": "نصفا دائرة نصف قطرهما 2 م يكوّنان دائرة كاملة: π × 2² ≈ 12.6. المجموع 40 + 12.6 ≈ 52.6 م²."
+     },
+     "en": {
+      "question": "A meeting room is a 10 × 4 m rectangle with a semicircle at each short end. What is its floor area?",
+      "options": {
+       "A": "40.0 m²",
+       "B": "46.3 m²",
+       "C": "77.7 m²",
+       "D": "52.6 m²"
+      },
+      "reason": "Two semicircles of radius 2 m make one circle: π × 2² ≈ 12.6. Total 40 + 12.6 ≈ 52.6 m²."
+     }
+    },
+    {
+     "id": "V-Q23",
+     "level": "medium",
+     "section": "1",
+     "answer": "B",
+     "trap": "D",
+     "ar": {
+      "question": "بلاطة أرضية 10 × 8 م وسمكها 0.2 م. كم يلزمها من الخرسانة؟",
+      "options": {
+       "A": "160 م³",
+       "B": "16 م³",
+       "C": "1.6 م³",
+       "D": "80 م³"
+      },
+      "reason": "10 × 8 × 0.2 = 16 م³. عدم تحويل 20 سم إلى 0.2 م يعطي أرقامًا خاطئة مثل 160."
+     },
+     "en": {
+      "question": "A 10 × 8 m floor slab is 0.2 m thick. How much concrete is needed?",
+      "options": {
+       "A": "160 m³",
+       "B": "16 m³",
+       "C": "1.6 m³",
+       "D": "80 m³"
+      },
+      "reason": "10 × 8 × 0.2 = 16 m³. Forgetting to convert 20 cm to 0.2 m gives 1,600 or 160."
+     }
+    },
+    {
+     "id": "V-Q24",
+     "level": "hard",
+     "section": "1",
+     "answer": "C",
+     "trap": "A",
+     "ar": {
+      "question": "غرفة 6 × 5 م وارتفاعها 3 م، وتحتاج 6 تغييرات هواء في الساعة. كم من الهواء النقي يجب أن يوفر المكيف؟",
+      "options": {
+       "A": "90 م³/س",
+       "B": "180 م³/س",
+       "C": "540 م³/س",
+       "D": "1,080 م³/س"
+      },
+      "reason": "الحجم 6 × 5 × 3 = 90 م³. تدفق الهواء = 6 × 90 = 540 م³/س. الحجم يحدد حجم المراوح والمجاري."
+     },
+     "en": {
+      "question": "A room is 6 × 5 m and 3 m high. It needs 6 air changes per hour. How much fresh air must the AC deliver?",
+      "options": {
+       "A": "90 m³/h",
+       "B": "180 m³/h",
+       "C": "540 m³/h",
+       "D": "1,080 m³/h"
+      },
+      "reason": "Volume 6 × 5 × 3 = 90 m³. Airflow = 6 × 90 = 540 m³/h. Volume decides the size of the fans and ducts."
+     }
+    },
+    {
+     "id": "V-Q25",
+     "level": "hard",
+     "section": "1",
+     "answer": "A",
+     "trap": "B",
+     "ar": {
+      "question": "تضاعفت مساحة جدار، وبقيت مادته (قيمة U) وفرق درجات الحرارة كما هي. ماذا يحدث للحرارة المنتقلة عبره؟",
+      "options": {
+       "A": "×2",
+       "B": "×4",
+       "C": "لا تتغير",
+       "D": "×8"
+      },
+      "reason": "Q = U × A × ΔT. تتغير A فقط، فتتضاعف الحرارة. كل متر مربع إضافي من الغلاف حمل تبريد إضافي."
+     },
+     "en": {
+      "question": "A wall's area doubles. Its material (U-value) and the temperature difference stay the same. What happens to the heat flowing through it?",
+      "options": {
+       "A": "×2",
+       "B": "×4",
+       "C": "No change",
+       "D": "×8"
+      },
+      "reason": "Q = U × A × ΔT. Only A changes, so the heat flow doubles. Every extra m² of skin is extra cooling load."
+     }
+    },
+    {
+     "id": "V-Q26",
+     "level": "hard",
+     "section": "1",
+     "answer": "D",
+     "trap": "A",
+     "ar": {
+      "question": "برج زجاجي له 4 واجهات، عرض كل منها 20 م وارتفاعها 60 م، و40% من الواجهات زجاج. كم مساحة الزجاج؟",
+      "options": {
+       "A": "4,800 م²",
+       "B": "480 م²",
+       "C": "2,880 م²",
+       "D": "1,920 م²"
+      },
+      "reason": "الواجهات = 4 × 20 × 60 = 4,800 م². الزجاج = 0.4 × 4,800 = 1,920 م². الرقم 4,800 ينسى نسبة 40%."
+     },
+     "en": {
+      "question": "A glass tower has 4 facades, each 20 m wide and 60 m tall. 40% of the facade is glass. How much glass is there?",
+      "options": {
+       "A": "4,800 m²",
+       "B": "480 m²",
+       "C": "2,880 m²",
+       "D": "1,920 m²"
+      },
+      "reason": "Facade = 4 × 20 × 60 = 4,800 m². Glass = 0.4 × 4,800 = 1,920 m². 4,800 forgets the 40%."
+     }
+    },
+    {
+     "id": "V-Q27",
+     "level": "hard",
+     "section": "1",
+     "answer": "B",
+     "trap": "A",
+     "ar": {
+      "question": "كوة سقفية هرمية قاعدتها مربع 4 × 4 م وارتفاعها 3 م. ما حجم الهواء داخلها؟",
+      "options": {
+       "A": "48 م³",
+       "B": "16 م³",
+       "C": "24 م³",
+       "D": "12 م³"
+      },
+      "reason": "الحجم = ⅓ × القاعدة × الارتفاع = ⅓ × 16 × 3 = 16 م³. نسيان ⅓ يعطي 48."
+     },
+     "en": {
+      "question": "A pyramid skylight has a 4 × 4 m square base and is 3 m high. What volume of air is inside it?",
+      "options": {
+       "A": "48 m³",
+       "B": "16 m³",
+       "C": "24 m³",
+       "D": "12 m³"
+      },
+      "reason": "V = ⅓ × base × height = ⅓ × 16 × 3 = 16 m³. Forgetting the ⅓ gives 48."
+     }
+    },
+    {
+     "id": "V-Q28",
+     "level": "hard",
+     "section": "1",
+     "answer": "C",
+     "trap": "B",
+     "ar": {
+      "question": "قبة على شكل نصف كرة نصف قطرها 10 م. ما مساحة التغطية لسطحها المنحني؟",
+      "options": {
+       "A": "314.2 م²",
+       "B": "1,256.6 م²",
+       "C": "628.3 م²",
+       "D": "942.5 م²"
+      },
+      "reason": "مساحة الكرة 4πr²، فالسطح المنحني لنصفها = 2πr² = 2 × π × 100 ≈ 628.3 م². الرقم 1,256.6 للكرة كاملة."
+     },
+     "en": {
+      "question": "A dome is a hemisphere of radius 10 m. How much roof covering does its curved surface need?",
+      "options": {
+       "A": "314.2 m²",
+       "B": "1,256.6 m²",
+       "C": "628.3 m²",
+       "D": "942.5 m²"
+      },
+      "reason": "Sphere = 4πr², so a hemisphere's curved surface = 2πr² = 2 × π × 100 ≈ 628.3 m². 1,256.6 is the whole sphere."
+     }
+    },
+    {
+     "id": "V-Q29",
+     "level": "hard",
+     "section": "1",
+     "answer": "A",
+     "trap": "B",
+     "ar": {
+      "question": "قاعة بقبة على شكل نصف كرة نصف قطرها 6 م. ما حجم الهواء الذي يجب أن يبرده المكيف تحت القبة؟",
+      "options": {
+       "A": "452.4 م³",
+       "B": "904.8 م³",
+       "C": "226.2 م³",
+       "D": "678.6 م³"
+      },
+      "reason": "حجم نصف الكرة = ⅔ × π × r³ = ⅔ × π × 216 ≈ 452.4 م³. الرقم 904.8 للكرة كاملة."
+     },
+     "en": {
+      "question": "A domed hall is a hemisphere of radius 6 m. What volume of air does the AC have to cool under the dome?",
+      "options": {
+       "A": "452.4 m³",
+       "B": "904.8 m³",
+       "C": "226.2 m³",
+       "D": "678.6 m³"
+      },
+      "reason": "Hemisphere V = ⅔ × π × r³ = ⅔ × π × 216 ≈ 452.4 m³. 904.8 is the whole sphere."
+     }
+    },
+    {
+     "id": "V-Q30",
+     "level": "hard",
+     "section": "1",
+     "answer": "B",
+     "trap": "A",
+     "ar": {
+      "question": "مسقط على شكل مخمس منتظم: ما مجموع زواياه الداخلية؟",
+      "options": {
+       "A": "360°",
+       "B": "540°",
+       "C": "720°",
+       "D": "450°"
+      },
+      "reason": "المجموع = (n − 2) × 180 = 3 × 180 = 540°. الرقم 360° لأي شكل رباعي."
+     },
+     "en": {
+      "question": "Regular pentagon plan: what is the sum of its interior angles?",
+      "options": {
+       "A": "360°",
+       "B": "540°",
+       "C": "720°",
+       "D": "450°"
+      },
+      "reason": "Sum = (n − 2) × 180 = 3 × 180 = 540°. 360° is the sum for any quadrilateral."
+     }
     }
    ]
   }

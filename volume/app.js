@@ -365,6 +365,12 @@
     };
   }
 
+  const WORLDS = [
+    { start: 0, en: ["WORLD 1", "Trust your eyes?"], ar: ["العالم 1", "هل تثق بعينيك؟"] },
+    { start: 13, en: ["WORLD 2 🔓", "Plans, angles & paint"], ar: ["العالم 2 🔓", "مساقط وزوايا ودهان"] },
+    { start: 23, en: ["WORLD 3 🔓", "Domes, air & glass"], ar: ["العالم 3 🔓", "قباب وهواء وزجاج"] }
+  ];
+  const worldOf = (i) => WORLDS.filter((w) => w.start <= i).length;
   function multiplier(streak) { return Math.min(CFG.comboMax, 1 + CFG.comboStep * Math.max(0, streak - 1)); }
   function L(q, l) { return q[l] && q[l].question ? q[l] : q.ar; }
 
@@ -376,7 +382,7 @@
     const txt = L(q, lang);
     const mult = multiplier(st.streak);
     c.innerHTML =
-      '<div class="hud"><span>' + esc(t("q")) + " " + (st.index + 1) + "/" + list.length + ' <span class="lvl lvl-' + q.level + '">' + esc(t(q.level)) + "</span></span>" +
+      '<div class="hud"><span>🌍 ' + worldOf(st.index) + " · " + esc(t("q")) + " " + (st.index + 1) + "/" + list.length + ' <span class="lvl lvl-' + q.level + '">' + esc(t(q.level)) + "</span></span>" +
       '<span class="combo' + (st.streak >= 2 ? " hot" : "") + '">×' + (+mult.toFixed(2)) + "</span>" +
       '<span class="coin-counter" id="coins">🪙 ' + st.score + "</span></div>" +
       '<div class="progress-track"><div class="progress-fill" style="width:' + (st.index / list.length * 100) + '%"></div></div>' +
@@ -481,6 +487,15 @@
     if (st.index >= qs(selectedDay).length) return finishDay();
     pushProgress(selectedDay);
     render();
+    const W = WORLDS.find((w) => w.start === st.index);
+    if (W) {
+      setTimeout(() => {
+        popText(W[lang][0], W[lang][1], 2600);
+        SFX.combo && SFX.combo();
+        if (window.confetti) { confetti({ particleCount: 160, spread: 100, origin: { y: 0.55 } }); setTimeout(() => confetti({ particleCount: 90, angle: 60, spread: 70, origin: { x: 0 } }), 250); setTimeout(() => confetti({ particleCount: 90, angle: 120, spread: 70, origin: { x: 1 } }), 400); }
+        if (window.GBScene) window.GBScene.correct(5);
+      }, 250);
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -552,12 +567,12 @@
       setTimeout(() => el.remove(), 1100);
     }
   }
-  function popText(big, small) {
+  function popText(big, small, ms) {
     const el = document.createElement("div");
     el.className = "pop";
     el.innerHTML = esc(big) + "<small>" + esc(small) + "</small>";
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), 1000);
+    setTimeout(() => el.remove(), ms || 1000);
   }
 
   // ---------------- controls ----------------
